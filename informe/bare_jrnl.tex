@@ -1,0 +1,350 @@
+\documentclass[journal]{IEEEtran}
+
+
+% *** GRAPHICS RELATED PACKAGES ***
+%
+\ifCLASSINFOpdf
+  % \usepackage[pdftex]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../pdf/}{../jpeg/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+\else
+  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
+  % will default to the driver specified in the system graphics.cfg if no
+  % driver is specified.
+  % \usepackage[dvips]{graphicx}
+  % declare the path(s) where your graphic files are
+  % \graphicspath{{../eps/}}
+  % and their extensions so you won't have to specify these with
+  % every instance of \includegraphics
+  % \DeclareGraphicsExtensions{.eps}
+\fi
+% graphicx was written by David Carlisle and Sebastian Rahtz. It is
+% required if you want graphics, photos, etc. graphicx.sty is already
+% installed on most LaTeX systems. The latest version and documentation
+% can be obtained at: 
+% http://www.ctan.org/pkg/graphicx
+% Another good source of documentation is "Using Imported Graphics in
+% LaTeX2e" by Keith Reckdahl which can be found at:
+% http://www.ctan.org/pkg/epslatex
+%
+% latex, and pdflatex in dvi mode, support graphics in encapsulated
+% postscript (.eps) format. pdflatex in pdf mode supports graphics
+% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
+% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
+% not a bitmapped formats (.jpeg, .png). The IEEE frowns on bitmapped formats
+% which can result in "jaggedy"/blurry rendering of lines and letters as
+% well as large increases in file sizes.
+%
+% You can find documentation about the pdfTeX application at:
+% http://www.tug.org/applications/pdftex
+
+
+
+
+
+
+% correct bad hyphenation here
+\hyphenation{op-tical net-works semi-conduc-tor}
+
+
+\begin{document}
+%
+% paper title
+% Titles are generally capitalized except for words such as a, an, and, as,
+% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
+% not capitalized unless they are the first or last word of the title.
+% Linebreaks \\ can be used within to get better formatting as desired.
+% Do not put math or special symbols in the title.
+\title{Título de su investigación}
+%
+%
+% author names and IEEE memberships
+% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
+% a structure at a ~ so this keeps an author's name from being broken across
+% two lines.
+% use \thanks{} to gain access to the first footnote area
+% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
+% was not built to handle multiple paragraphs
+%
+
+\author{Integrante 1,  Integrante 2% <-this % stops a space
+\thanks{Integrantes 1 y 2 son estudiantes de la Pontificia Universidad Católica de Chile (emails: integrante1@uc.cl, integrante2@uc.cl).}% <-this % stops a space
+}
+
+ 
+
+
+
+% The paper headers
+\markboth{IEE3683--Networked Control Systems}%
+{}
+
+
+
+
+
+% make the title area
+\maketitle
+
+\begin{abstract}
+Escribe el Abstract como UN solo párrafo, 150–250 palabras. Debe ser autocontenido: sin citas, fórmulas ni figuras. Incluye, en este orden sugerido:
+ 1) Motivación y contexto: por qué es importante el tema.
+ 2) Problema abordado: qué aspecto de control + comunicaciones se estudió.
+ 3) Metodología: enfoque/algoritmo/protocolo + simulación empleada.
+ 4) Resultados principales: métrica(s) clave y hallazgos.
+ 5) Conclusión breve: implicancias y/o aplicaciones.
+\end{abstract}
+
+
+\begin{IEEEkeywords}
+Palabras clave (IEEEkeywords) con 3–6 términos separados por comas.
+\end{IEEEkeywords}
+
+
+
+\IEEEpeerreviewmaketitle
+
+
+
+\section{Introducción}
+
+\IEEEPARstart{S}{iga} las siguientes instrucciones para construir la introducción:
+
+
+\begin{enumerate}
+    \item \textbf{Contextualizar el tema}: explicar por qué el área de \textit{Networked Control Systems} es relevante y cómo se conecta con aplicaciones reales.
+    \item \textbf{Motivar el problema específico del proyecto}: describir brevemente qué desafío combina control y comunicaciones.
+    \item \textbf{Revisar el estado del arte}: 
+    \begin{itemize}
+        \item Incluir una revisión de trabajos previos relevantes.  
+        \item Usar entre 8 a 10 referencias como mínimo.  
+        \item Señalar qué enfoques existen, sus ventajas y limitaciones.  
+    \end{itemize}
+    \item \textbf{Identificar la brecha}: indicar qué aspecto no está completamente resuelto en la literatura o qué elemento se replicará en este proyecto.
+    \item \textbf{Definir el objetivo del trabajo}: enunciar claramente qué se busca lograr (ejemplo: analizar, implementar, comparar, replicar).
+    \item \textbf{Estructura del paper}: terminar con un párrafo que explique cómo se organiza el resto del artículo (secciones de metodología, resultados, conclusiones, etc.).
+\end{enumerate}
+
+\noindent\textbf{Notas importantes:}
+\begin{itemize}
+    \item Deben citar correctamente en formato IEEE (ej. [1], [2], …).
+    \item Evitar descripciones excesivamente generales (ir al grano del tema).
+    \item Mantener una extensión aproximada de 1 a 1.5 páginas en formato IEEE.
+\end{itemize} 
+
+
+\section{Descripción del problema}
+Esta sección debe contener dos partes principales:
+
+\begin{enumerate}
+    \item \textbf{Descripción del problema}
+    \begin{itemize}
+        \item Explicar claramente el sistema o aplicación bajo estudio (ej. péndulo invertido, formación vehicular, proceso industrial, robot móvil, etc.).
+        \item Indicar qué aspecto de comunicaciones se considera (retardo, pérdida de paquetes, ruido, limitación de ancho de banda, protocolo de acceso, etc.).
+        \item Presentar los objetivos específicos del análisis (ej. estabilidad, reducción de uso de canal, comparación de desempeño).
+        \item Incluir las ecuaciones matemáticas del modelo de planta y/o canal de comunicaciones, si corresponde.
+    \end{itemize}
+
+    \item \textbf{Metodología}
+    \begin{itemize}
+        \item Describir el enfoque seguido para abordar el problema.
+        \item Especificar qué algoritmos, leyes de control o protocolos se implementan.
+        \item Indicar qué herramientas se usarán para las simulaciones (ej. Python, MATLAB, Simulink, etc.).
+        \item Justificar por qué esta metodología es adecuada para responder a la pregunta planteada.
+    \end{itemize}
+\end{enumerate}
+
+\noindent\textbf{Notas importantes:}
+\begin{itemize}
+    \item Usar lenguaje claro y conciso, apoyándose en notación matemática cuando sea necesario.
+    \item Si se introducen ecuaciones, deben estar numeradas solo si se referencian en el texto.
+    \item Esta sección debe ser lo suficientemente precisa para que otro estudiante pueda \textbf{reproducir la metodología}.
+\end{itemize}
+
+
+
+
+\section{Resultados teóricos}
+Esta sección debe presentar los \textbf{desarrollos analíticos o matemáticos} que apoyan el trabajo.
+
+\begin{enumerate}
+    \item \textbf{Planteamiento matemático}
+    \begin{itemize}
+        \item Exponer de manera clara cualquier análisis teórico realizado.
+        \item Puede incluir estabilidad, convergencia, análisis de desempeño, cotas de error, etc.
+        \item Se puede presentar un \textbf{resultado de la literatura} que sea relevante al problema, explicándolo con sus propias palabras.
+
+        \item Indicar las hipótesis o supuestos bajo los cuales se obtiene el resultado.
+
+        \item Si desea incluir derivaciones, solo incluya los pasos esenciales para llegar al resultado, sin sobrecargar con detalles algebraicos
+    \end{itemize}
+
+    \item \textbf{Interpretación}
+    \begin{itemize}
+        \item Explicar qué implican los resultados obtenidos en términos de control y comunicaciones.
+    \end{itemize}
+\end{enumerate}
+
+\noindent\textbf{Notas importantes:}
+\begin{itemize}
+    \item No basta solo con copiar ecuaciones: deben \textbf{interpretarlas} en relación con el problema estudiado.
+    \item Esta sección puede ser breve si el foco principal del proyecto es experimental, pero debe incluir al menos un análisis o marco teórico claro.
+\end{itemize}
+
+
+
+\section{Simulaciones}
+Esta sección debe presentar los \textbf{experimentos computacionales} realizados para evaluar el problema y la metodología propuesta.
+
+\begin{enumerate}
+    \item \textbf{Entorno de simulación}
+    \begin{itemize}
+        \item Especificar las herramientas utilizadas (ej. Python, MATLAB, Simulink, etc.).
+        \item Indicar los parámetros principales de la simulación (tiempos de muestreo, duración, número de agentes, probabilidades de pérdida, etc.).
+        \item Aclarar si se basan en datos reales, ficticios pero realistas, o en parámetros extraídos de un paper.
+    \end{itemize}
+
+    \item \textbf{Diseño de experimentos}
+    \begin{itemize}
+        \item Describir qué escenarios se evaluaron (ej. diferentes tasas de pérdida, retardos crecientes, distintos protocolos).
+        \item Explicar la relación de cada escenario con las preguntas de investigación.
+        \item Indicar cómo se midió el desempeño (ej. estabilidad, error cuadrático medio, tasa de transmisión, consumo de recursos).
+    \end{itemize}
+
+    \item \textbf{Resultados obtenidos}
+    \begin{itemize}
+        \item Presentar los resultados de forma clara mediante tablas y figuras.
+        \item Asegurarse de que todos los gráficos tengan títulos, ejes con unidades y leyendas si corresponde.
+        \item Comparar los escenarios evaluados, destacando patrones y diferencias.
+    \end{itemize}
+
+    \item \textbf{Análisis crítico}
+    \begin{itemize}
+        \item Interpretar qué significan los resultados en términos de control y comunicaciones.
+        \item Destacar fortalezas y limitaciones de la metodología evaluada.
+        \item Relacionar los resultados con los objetivos planteados al inicio del proyecto.
+    \end{itemize}
+\end{enumerate}
+
+\noindent\textbf{Notas importantes:}
+\begin{itemize}
+    \item Todas las figuras y tablas deben ser referenciadas y explicadas en el texto.
+    \item No basta con mostrar gráficos: deben ser \textbf{analizados e interpretados}.
+    \item Esta sección suele ocupar entre 2 y 3 páginas en formato IEEE.
+\end{itemize}
+
+
+
+
+\section{Conclusiones}
+La sección de \textbf{Conclusiones} debe cerrar el artículo de manera clara y concisa, resumiendo los principales hallazgos del trabajo.
+
+\begin{enumerate}
+    \item \textbf{Síntesis del trabajo realizado}
+    \begin{itemize}
+        \item Resumir brevemente el objetivo planteado y cómo fue abordado.
+        \item Recordar las principales técnicas o metodologías utilizadas.
+    \end{itemize}
+
+    \item \textbf{Principales resultados}
+    \begin{itemize}
+        \item Destacar los hallazgos más relevantes, tanto teóricos como de simulación.
+        \item Explicar qué significan estos resultados para el problema de control y comunicaciones.
+    \end{itemize}
+
+    \item \textbf{Implicancias}
+    \begin{itemize}
+        \item Señalar qué se aprendió sobre la relación entre control y comunicaciones en el contexto estudiado.
+        \item Indicar la relevancia práctica o teórica de los resultados obtenidos.
+    \end{itemize}
+
+    \item \textbf{Limitaciones y trabajo futuro}
+    \begin{itemize}
+        \item Reconocer brevemente las limitaciones del trabajo realizado.
+        \item Sugerir posibles extensiones o líneas de investigación futura que podrían abordar esas limitaciones.
+    \end{itemize}
+\end{enumerate}
+
+\noindent\textbf{Notas importantes:}
+\begin{itemize}
+    \item Evitar repetir textualmente párrafos de otras secciones (no es un resumen extendido).
+    \item No introducir resultados nuevos aquí: solo se discuten los ya presentados.
+    \item Mantener la extensión de la sección breve (aprox. 0.5 página en formato IEEE).
+\end{itemize}
+
+
+
+
+% if have a single appendix:
+%\appendix[Proof of the Zonklar Equations]
+% or
+%\appendix  % for no appendix heading
+% do not use \section anymore after \appendix, only \section*
+% is possibly needed
+
+% use appendices with more than one appendix
+% then use \section to start each appendix
+% you must declare a \section before using any
+% \subsection or using \label (\appendices by itself
+% starts a section numbered zero.)
+%
+
+
+\appendices
+\section{Título del apéndice}
+El apéndice es opcional y se puede usar para incluir material complementario que no cabe en el cuerpo principal del artículo, como detalles de derivaciones matemáticas, pseudocódigo, o fragmentos de código utilizados en las simulaciones. No debe contener resultados nuevos.
+
+
+
+
+% use section* for acknowledgment
+\section*{Agradecimientos}
+Los autores les gustaría agradecer a...
+
+
+% Can use something like this to put references on a page
+% by themselves when using endfloat and the captionsoff option.
+\ifCLASSOPTIONcaptionsoff
+  \newpage
+\fi
+
+
+
+\begin{thebibliography}{1}
+
+\bibitem{IEEEhowto:kopka}
+H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
+  0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
+
+\end{thebibliography}
+
+% biography section
+% 
+% If you have an EPS/PDF photo (graphicx package needed) extra braces are
+% needed around the contents of the optional argument to biography to prevent
+% the LaTeX parser from getting confused when it sees the complicated
+% \includegraphics command within an optional argument. (You could create
+% your own custom macro containing the \includegraphics command to make things
+% simpler here.)
+%\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
+% or if you just want to reserve a space for a photo:
+
+\begin{IEEEbiography}{Integrante 1}
+De manera opcional, los estudiantes pueden agregar al final del artículo una breve biografía acompañada de su fotografía, siguiendo el estilo habitual de los papers IEEE. La biografía debe ser concisa (5–6 líneas) y escrita en tercera persona.
+
+Ejemplo:
+
+Juan Pérez es estudiante de Ingeniería Eléctrica en la Pontificia Universidad Católica de Chile. Actualmente cursa cuarto año de su carrera. Sus áreas de interés incluyen sistemas de control automático, comunicaciones inalámbricas y ciberseguridad en sistemas ciberfísicos. [También pueden incorporar cualquier experiencia que hayan tenido relacionada con el área.]
+\end{IEEEbiography}
+
+\begin{IEEEbiography}{Integrante 2}
+Bio de Integrante 2 
+\end{IEEEbiography}
+
+
+\end{document}
+
+
