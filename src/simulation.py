@@ -349,23 +349,33 @@ def run_comparison_study(
     results = {}
     
     for control, alloc, power, name in methods:
-        config = SimulationConfig(
-            num_vehicles=num_vehicles,
-            simulation_time=simulation_time,
-            control_method=control,
-            allocation_method=alloc,
-            power_method=power
-        )
-        
-        sim = PlatoonNOMASimulation(config, random_seed)
-        sim.run(verbose=False)
-        result = sim.get_results()
-        
-        results[name] = {
-            'avg_sum_rate_mbps': result['avg_sum_rate_mbps'],
-            'avg_qos_satisfaction': result['avg_qos_satisfaction'],
-            'avg_spacing_error': result['avg_spacing_error'],
-            'string_stable_ratio': result['string_stable_ratio']
-        }
+        try:
+            config = SimulationConfig(
+                num_vehicles=num_vehicles,
+                simulation_time=simulation_time,
+                control_method=control,
+                allocation_method=alloc,
+                power_method=power
+            )
+            
+            sim = PlatoonNOMASimulation(config, random_seed)
+            sim.run(verbose=False)
+            result = sim.get_results()
+            
+            results[name] = {
+                'avg_sum_rate_mbps': result['avg_sum_rate_mbps'],
+                'avg_qos_satisfaction': result['avg_qos_satisfaction'],
+                'avg_spacing_error': result['avg_spacing_error'],
+                'string_stable_ratio': result['string_stable_ratio']
+            }
+        except Exception as e:
+            # Log the error but continue with other methods
+            results[name] = {
+                'avg_sum_rate_mbps': 0.0,
+                'avg_qos_satisfaction': 0.0,
+                'avg_spacing_error': float('inf'),
+                'string_stable_ratio': 0.0,
+                'error': str(e)
+            }
     
     return results
