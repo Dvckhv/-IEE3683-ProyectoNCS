@@ -1,0 +1,114 @@
+## ------------------------------------------------------------------
+## Archivos temporales típicos de LaTeX
+## ------------------------------------------------------------------
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fmt
+*.fot
+*.cb
+*.cb2
+*.lb
+
+## ------------------------------------------------------------------
+## Archivos de sincronización / referencias internas
+## ------------------------------------------------------------------
+*.synctex.gz
+*.synctex(busy)
+
+## ------------------------------------------------------------------
+## Archivos generados por BibTeX / Biber
+## ------------------------------------------------------------------
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+
+## ------------------------------------------------------------------
+## Archivos generados por glossaries / nomenclatura
+## ------------------------------------------------------------------
+*.glo
+*.gls
+*.glsdefs
+*.ist
+*.acn
+*.acr
+*.alg
+*.glg
+*.nlo
+*.nls
+
+## ------------------------------------------------------------------
+## Archivos generados por listings, minted, SVG, tikz, etc.
+## ------------------------------------------------------------------
+*.listing
+*.lol
+*.nav
+*.snm
+*.vrb
+*.fdb_latexmk
+*.xdv
+*.tdo
+
+## TikZ externalize
+*.dpth
+*.md5
+*.auxlock
+
+## Minted cache
+_minted*
+*/_minted*
+
+## ------------------------------------------------------------------
+## Archivos de editores
+## ------------------------------------------------------------------
+# VSCode
+.vscode/
+
+# TeXstudio / TeXmaker
+*.backup
+*.bak
+*.tmp
+*.swp
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+## ------------------------------------------------------------------
+## Archivos temporales y cache de MATLAB
+## ------------------------------------------------------------------
+
+# Archivos de autoguardado y respaldo
+*.asv
+*.m~  
+*.mlx~ 
+
+# Archivos temporales creados al ejecutar scripts
+*.mat       # (si no quieres versionar resultados numéricos)
+*.fig       # figuras guardadas automáticamente
+*.tmp
+*.bak
+
+# Caché de MATLAB para Live Scripts y análisis
+*.mex*
+*.p         # archivos protegidos/compilados
+*.slxc      # cache de Simulink (puede regenerarse)
+*.slprj/    # proyecto de Simulink
+*.autosave
+
+# Directorios generados por Simulink/Stateflow
+sccprj/
+slprj/
+work/
+
+# Caché de herramientas
+codegen/    # código generado (MATLAB Coder, Simulink Coder)
+coder/      # archivos temporales de coder
+

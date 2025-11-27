@@ -76,7 +76,7 @@ for t = 1 : Sim.Steps - 1
         errors = calculate_errors(POS(:,t), VEL(:,t), Platoon);
         
         % 2. Ejecutar Algoritmo 1: User Scheduling 
-        UserSchedule = run_stage_1_scheduling(errors, Sim, Platoon);
+        UserSchedule = run_stage_1_scheduling(errors, Sim, Platoon, Comm);
     end
     
     % --- C. COMUNICACIÓN Y NOMA (Cada slot) ---
@@ -209,38 +209,121 @@ function est = estimate_predecessor_state(last_info, t_now, dt)
     est.p_next = p_est_now + v_est_now * dt + 0.5 * u_last * dt^2;
 end
 
-function sched = run_stage_1_scheduling(errors, Sim, Platoon)
+function sched = run_stage_1_scheduling(errors, Sim, Platoon, Comm)
     % Implementación del Algoritmo 1 
     sched = zeros(Platoon.N, Sim.T_scheduling);
-    
-    % [TODO]: Implementar lógica de búsqueda en "Z" y cálculo de frecuencia f_i
-    % Loop sobre vehículos con error > e_th
-    % Asignar '1' en la matriz sched según disponibilidad (máx 2 por columna)
-    
-    % Placeholder básico: Asignar round-robin simple si hay error
-    col = 1;
-    for i=1:Platoon.N
-        if abs(errors(i)) > Platoon.e_th
-            sched(i, col) = 1;
-            col = col + 1;
-            if col > Sim.T_scheduling, col = 1; end
+
+    % Contador de cuántos usuarios hay en cada slot
+    slot_load = zeros(1, Sim.T_scheduling);
+
+    for i = 1:N
+        e_i = abs(errors(i));
+
+        % Si el error está bajo el umbral, no se agenda al MV i
+        if e_i <= Platoon.e_th
+            continue;
+        end
+
+        % f_i según Ec. (9): número de slots asignados en un período
+        avg_err_corr_per_slot = 0.5 * Platoon.u_max * Sim.T_scheduling * (Sim.dt^2);
+        f_real = e_i / avg_err_corr_per_slot;
+        f_max  = Comm.O_max * Sim.T_scheduling / Platoon.N;
+
+        f_i = ceil(min(f_real, f_max));   % redondeo hacia arriba para asegurar corrección
+        if f_i <= 0
+            continue;
+        end
+
+        % c_i según Ec. (21): separación promedio entre comunicaciones
+        c_i = max(1, floor(Sim.T_scheduling / f_i));
+
+        allocated = 0;
+        tn = 1;   % primer slot deseado dentro del período
+
+        while (allocated < f_i) && (tn <= Sim.T_scheduling)
+            desired = min(tn, Sim.T_scheduling);
+
+            if slot_load(desired) < Comm.O_max
+                % Slot deseado disponible
+                sched(i, desired) = 1;
+                slot_load(desired) = slot_load(desired) + 1;
+                allocated = allocated + 1;
+                tn = desired + c_i;
+            else
+                % Búsqueda en "Z" alrededor del slot deseado
+                found = false;
+                for d = 1:(Sim.T_scheduling - 1)
+                    left  = desired - d;
+                    right = desired + d;
+
+                    if left >= 1 && slot_load(left) < Comm.O_max
+                        desired = left;
+                        found = true;
+                        break;
+                    end
+                    if right <= Sim.T_scheduling && slot_load(right) < Comm.O_max
+                        desired = right;
+                        found = true;
+                        break;
+                    end
+                end
+
+                if ~found
+                    % No quedan slots libres en este período
+                    break;
+                end
+
+                sched(i, desired) = 1;
+                slot_load(desired) = slot_load(desired) + 1;
+                allocated = allocated + 1;
+                tn = desired + c_i;
+            end
         end
     end
+
 end
 
 function powers = run_stage_2_power(users, h_gains, Comm)
     % Implementación Teorema 1 y Asignación Greedy 
     num_users = length(users);
     powers = zeros(num_users, 1);
+    p_sorted = zeros(num_users, 1);
     
     % Ordenar usuarios por ganancia (para NOMA decoding order)
     % El paper indica ordenar por "interference channel gain"
-    % Aquí asumimos orden dummy para el esqueleto
-    
-    % Cálculo Greedy (Ec. 24)
-    % p1 = R_th * N / h1 ...
-    % [TODO]: Implementar fórmula recursiva de potencia
-    powers(:) = Comm.P_max / num_users; % Placeholder: Potencia igualitaria
+
+    if num_users == 0
+        return;
+    end
+
+    % Orden aproximado para decodificación NOMA (por ganancia de canal)
+    [h_sorted, sort_idx] = sort(h_gains(:), 'ascend');   % orden creciente
+
+    for k = 1:num_users
+        if k == 1
+            % Primer usuario: sólo ruido
+            interference = 0;
+        else
+            % Interferencia aproximada de los usuarios ya asignados
+            interference = sum(p_sorted(1:k-1) .* h_sorted(1:k-1));
+        end
+
+        % Potencia mínima para cumplir SINR >= R_th
+        p_k = Comm.R_th * (Comm.N0 + interference) / h_sorted(k);
+
+        % Respeta cota de potencia
+        if p_k > Comm.P_max
+            p_k = Comm.P_max;
+        elseif p_k < 0
+            p_k = 0;
+        end
+
+        p_sorted(k) = p_k;
+    end
+
+    % Reordenar a la correspondencia original de 'users'
+    powers(sort_idx) = p_sorted;
+
 end
 
 function e = calculate_errors(pos_t, vel_t, Platoon)
