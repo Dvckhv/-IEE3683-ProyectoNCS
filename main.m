@@ -79,22 +79,57 @@ for t = 1 : Sim.Steps - 1
         UserSchedule = run_stage_1_scheduling(errors, Sim, Platoon);
     end
     
-    % --- C. COMUNICACIÓN Y NOMA (Cada slot) ---
-    % Determinar qué usuarios transmiten en este slot relativo (1 a T)
+   % --- C. COMUNICACIÓN Y NOMA (Cada slot) ---
     slot_idx = mod(t-1, Sim.T_scheduling) + 1;
     scheduled_users = find(UserSchedule(:, slot_idx) == 1);
     
     if ~isempty(scheduled_users)
-        % 1. Generar Canal (H) y Ruido
-        % [TODO]: Implementar modelo Rayleigh Fading aquí
-        % H = abs((randn(N,1) + 1i*randn(N,1))/sqrt(2)); ...
-        H_gains = ones(length(scheduled_users), 1); % Placeholder: Ganancia Unitaria
+        num_users = length(scheduled_users);
         
-        % 2. Ejecutar Stage 2: Power Allocation
-        % Asigna potencias basadas en SINR target y NOMA decoding order
-        allocated_powers = run_stage_2_power(scheduled_users, H_gains, Comm);
+        % Estructuras para guardar las ganancias
+        % H_signal: Ganancia de mi predecesor a mí.
+        % H_interference: Ganancia del predecesor DEL OTRO a mí.
+        H_signal = zeros(num_users, 1);
+        H_interference = zeros(num_users, 1); 
         
-        % 3. Actualizar información si la comunicación es exitosa
+        % NOTA: Este bloque asume O_max = 2 (parejas NOMA), como en la Tabla I
+        
+        for k = 1:num_users
+            u_self = scheduled_users(k);      % Yo (Receptor)
+            u_pred = u_self - 1;              % Mi Predecesor (Transmisor)
+            
+            % 1. Calcular mi ganancia de SEÑAL (Signal Gain)
+            pos_rx = POS(u_self + 1, t);
+            pos_tx = POS(u_pred + 1, t);
+            H_signal(k) = calculate_channel_gain(pos_tx, pos_rx);
+            
+            % 2. Calcular ganancia de INTERFERENCIA (Interference Gain)
+            % Buscamos al "otro" usuario que comparte el slot conmigo
+            if num_users > 1
+                % Encontrar índice del otro usuario en la lista scheduled_users
+                other_k = find(scheduled_users ~= u_self); 
+                
+                if ~isempty(other_k)
+                    u_other = scheduled_users(other_k(1)); % El otro usuario
+                    u_other_pred = u_other - 1;            % El transmisor del otro
+                    
+                    % La interferencia viene del TRANSMISOR del otro hacia MÍ
+                    pos_tx_interferer = POS(u_other_pred + 1, t);
+                    
+                    % Calculamos cuánto ruido me llega de él
+                    H_interference(k) = calculate_channel_gain(pos_tx_interferer, pos_rx);
+                end
+            else
+                % Si estoy solo en el slot, interferencia de NOMA es 0
+                H_interference(k) = 0; 
+            end
+        end
+        
+        % 3. Ejecutar Stage 2: Power Allocation con DATOS REALES
+        % Ahora pasamos ambas ganancias a la función
+        allocated_powers = run_stage_2_power(scheduled_users, H_signal, H_interference, Comm);
+        
+        % 4. Actualizar información si la comunicación es exitosa
         for k = 1:length(scheduled_users)
             u_id = scheduled_users(k);
             % Si potencia > 0 y < Pmax, asumimos éxito (simplificado)
@@ -251,4 +286,29 @@ function e = calculate_errors(pos_t, vel_t, Platoon)
         val = (pos_t(i) - pos_t(i+1)) - (Platoon.d_des + Platoon.len);
         e(i) = val;
     end
+end
+function h_gain = calculate_channel_gain(pos_tx, pos_rx)
+    % 1. Configuración de Path Loss (Estándar V2V)
+    alpha = 3;      % Exponente de path loss (3 es típico urbano/autopista)
+    G0 = 1;         % Ganancia de referencia a 1 metro (simplificado)
+    epsilon = 1e-6; % Evitar división por cero
+    
+    % Calcular distancia
+    dist = abs(pos_tx - pos_rx);
+    dist = max(dist, epsilon); % Seguridad numérica
+    
+    % 2. Path Loss (Large Scale)
+    % La potencia decae con la distancia
+    path_loss = G0 * (dist .^ (-alpha));
+    
+    % 3. Rayleigh Fading (Small Scale)
+    % Generamos un número complejo: Parte Real + Parte Imag
+    % randn genera distribución Normal(0,1)
+    h_small = (randn(1,1) + 1i * randn(1,1)) / sqrt(2);
+    
+    % La magnitud al cuadrado sigue una distribución Exponencial
+    rayleigh_gain = abs(h_small)^2;
+    
+    % 4. Ganancia Total de Canal (Potencia)
+    h_gain = path_loss * rayleigh_gain;
 end
