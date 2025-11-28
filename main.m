@@ -23,8 +23,8 @@ Platoon.u_min = -2;
 Platoon.m = 1500;
 lims.Fmax = Platoon.u_max * Platoon.m;
 lims.Fmin = Platoon.u_min * Platoon.m;
-lims.dFmax = (9e-7) / Platoon.m;
-lims.dFmin = -(9e-7) / Platoon.m;
+lims.dFmax = 0.9 / Platoon.m;
+lims.dFmin = -0.9 / Platoon.m;
 
 %% 2. INICIALIZACIÓN DE ESTADOS (positions in meters, v in m/s)
 POS = zeros(Platoon.N + 1, Sim.Steps); % index 1: leader (vehicle 0), 2: MV1, ...
