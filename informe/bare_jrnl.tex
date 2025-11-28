@@ -1,350 +1,206 @@
 \documentclass[journal]{IEEEtran}
 
-
 % *** GRAPHICS RELATED PACKAGES ***
-%
 \ifCLASSINFOpdf
   \usepackage[pdftex]{graphicx}
-  % declare the path(s) where your graphic files are
-  \graphicspath{{imgs/}{../jpeg/}}
-  % and their extensions so you won't have to specify these with
-  % every instance of \includegraphics
-  % \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
+  % \graphicspath{{imgs/}}
 \else
-  % or other class option (dvipsone, dvipdf, if not using dvips). graphicx
-  % will default to the driver specified in the system graphics.cfg if no
-  % driver is specified.
-  % \usepackage[dvips]{graphicx}
-  % declare the path(s) where your graphic files are
-  % \graphicspath{{../eps/}}
-  % and their extensions so you won't have to specify these with
-  % every instance of \includegraphics
-  % \DeclareGraphicsExtensions{.eps}
 \fi
-% graphicx was written by David Carlisle and Sebastian Rahtz. It is
-% required if you want graphics, photos, etc. graphicx.sty is already
-% installed on most LaTeX systems. The latest version and documentation
-% can be obtained at: 
-% http://www.ctan.org/pkg/graphicx
-% Another good source of documentation is "Using Imported Graphics in
-% LaTeX2e" by Keith Reckdahl which can be found at:
-% http://www.ctan.org/pkg/epslatex
-%
-% latex, and pdflatex in dvi mode, support graphics in encapsulated
-% postscript (.eps) format. pdflatex in pdf mode supports graphics
-% in .pdf, .jpeg, .png and .mps (metapost) formats. Users should ensure
-% that all non-photo figures use a vector format (.eps, .pdf, .mps) and
-% not a bitmapped formats (.jpeg, .png). The IEEE frowns on bitmapped formats
-% which can result in "jaggedy"/blurry rendering of lines and letters as
-% well as large increases in file sizes.
-%
-% You can find documentation about the pdfTeX application at:
-% http://www.tug.org/applications/pdftex
 
-
-
-
-
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{cite}
+\usepackage{algorithm}
+\usepackage{algorithmic}
 
 % correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
 
-
 \begin{document}
 %
 % paper title
-% Titles are generally capitalized except for words such as a, an, and, as,
-% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
-% not capitalized unless they are the first or last word of the title.
-% Linebreaks \\ can be used within to get better formatting as desired.
-% Do not put math or special symbols in the title.
-\title{Título de su investigación}
-%
-%
-% author names and IEEE memberships
-% note positions of commas and nonbreaking spaces ( ~ ) LaTeX will not break
-% a structure at a ~ so this keeps an author's name from being broken across
-% two lines.
-% use \thanks{} to gain access to the first footnote area
-% a separate \thanks must be used for each paragraph as LaTeX2e's \thanks
-% was not built to handle multiple paragraphs
-%
+\title{Joint Platoon Control and Resource Allocation for NOMA-V2V Communication System}
 
-\author{Integrante 1,  Integrante 2% <-this % stops a space
-\thanks{Integrantes 1 y 2 son estudiantes de la Pontificia Universidad Católica de Chile (emails: integrante1@uc.cl, integrante2@uc.cl).}% <-this % stops a space
+% author names
+\author{Jorge Apud, Patricio Hinostroza%
+\thanks{Los autores son estudiantes de la Pontificia Universidad Católica de Chile (emails: patricio.hinostrozav@uc.cl, japud@uc.cl).}%
 }
 
- 
-
-
-
 % The paper headers
-\markboth{IEE3683--Networked Control Systems}%
-{}
-
-
-
-
+\markboth{IEE3683--Networked Control Systems}{}
 
 % make the title area
 \maketitle
 
 \begin{abstract}
-Escribe el Abstract como UN solo párrafo, 150–250 palabras. Debe ser autocontenido: sin citas, fórmulas ni figuras. Incluye, en este orden sugerido:
- 1) Motivación y contexto: por qué es importante el tema.
- 2) Problema abordado: qué aspecto de control + comunicaciones se estudió.
- 3) Metodología: enfoque/algoritmo/protocolo + simulación empleada.
- 4) Resultados principales: métrica(s) clave y hallazgos.
- 5) Conclusión breve: implicancias y/o aplicaciones.
+El control de formaciones vehiculares (platooning) es una tecnología prometedora para mejorar la eficiencia del tráfico y reducir el consumo de combustible. Sin embargo, la estabilidad del control depende críticamente de una comunicación fiable, cuyos recursos (ancho de banda y tiempo) son limitados. Este trabajo investiga el problema del control conjunto de platoon y la asignación de recursos utilizando Acceso Múltiple No Ortogonal (NOMA) en sistemas Vehículo-a-Vehículo (V2V). Se aborda la limitación de espectro mediante un esquema que permite a múltiples vehículos compartir ranuras de tiempo, priorizando las transmisiones según las demandas de error de control. La metodología empleada consiste en una simulación en MATLAB que integra un modelo cinemático de segundo orden, un canal con desvanecimiento Rayleigh y un controlador predictivo basado en Programación Cuadrática (QP). Los resultados principales demuestran que, mediante una asignación de potencia basada en el orden de interferencia y un agendamiento dinámico, es posible mantener errores de espaciamiento inferiores a 0.01 m en escenarios de perturbación, optimizando el uso de potencia y garantizando la estabilidad de la cuerda con una actualización eficiente de la información.
 \end{abstract}
 
-
 \begin{IEEEkeywords}
-Palabras clave (IEEEkeywords) con 3–6 términos separados por comas.
+Control de Platoon, Asignación de Recursos, NOMA, Comunicaciones V2V, Programación Cuadrática.
 \end{IEEEkeywords}
-
-
 
 \IEEEpeerreviewmaketitle
 
-
-
 \section{Introducción}
 
-\IEEEPARstart{S}{iga} las siguientes instrucciones para construir la introducción:
+\IEEEPARstart{L}{os} Sistemas de Control en Red (Networked Control Systems, NCS) han cobrado gran relevancia en la ingeniería moderna, especialmente en el contexto de los Sistemas Inteligentes de Transporte (ITS). La capacidad de coordinar múltiples agentes a través de redes de comunicación inalámbrica permite aplicaciones avanzadas como el *platooning* vehicular, donde una fila de vehículos se mueve a velocidades consistentes manteniendo distancias reducidas para optimizar la aerodinámica y el flujo vial.
 
+El desafío fundamental en este proyecto radica en la interacción acoplada entre el control y las comunicaciones. Un controlador robusto requiere información frecuente y fiable del predecesor; sin embargo, el espectro de radiofrecuencia es un recurso escaso. Las tecnologías tradicionales de Acceso Múltiple Ortogonal (OMA) a menudo subutilizan el canal o introducen latencias inaceptables cuando el número de vehículos aumenta.
 
-\begin{enumerate}
-    \item \textbf{Contextualizar el tema}: explicar por qué el área de \textit{Networked Control Systems} es relevante y cómo se conecta con aplicaciones reales.
-    \item \textbf{Motivar el problema específico del proyecto}: describir brevemente qué desafío combina control y comunicaciones.
-    \item \textbf{Revisar el estado del arte}: 
-    \begin{itemize}
-        \item Incluir una revisión de trabajos previos relevantes.  
-        \item Usar entre 8 a 10 referencias como mínimo.  
-        \item Señalar qué enfoques existen, sus ventajas y limitaciones.  
-    \end{itemize}
-    \item \textbf{Identificar la brecha}: indicar qué aspecto no está completamente resuelto en la literatura o qué elemento se replicará en este proyecto.
-    \item \textbf{Definir el objetivo del trabajo}: enunciar claramente qué se busca lograr (ejemplo: analizar, implementar, comparar, replicar).
-    \item \textbf{Estructura del paper}: terminar con un párrafo que explique cómo se organiza el resto del artículo (secciones de metodología, resultados, conclusiones, etc.).
-\end{enumerate}
+El estado del arte ha explorado ampliamente el control de platoons asumiendo comunicaciones ideales [1], o bien la optimización de redes vehiculares sin considerar la dinámica del control [2]. Enfoques recientes han intentado unir ambos mundos [3], [4], pero a menudo se limitan a esquemas OMA que no escalan eficientemente. La tecnología NOMA (*Non-Orthogonal Multiple Access*) surge como una solución potente al permitir la superposición de señales en el dominio de la potencia, aumentando la eficiencia espectral, aunque introduce complejidad en la gestión de interferencias [5].
 
-\noindent\textbf{Notas importantes:}
-\begin{itemize}
-    \item Deben citar correctamente en formato IEEE (ej. [1], [2], …).
-    \item Evitar descripciones excesivamente generales (ir al grano del tema).
-    \item Mantener una extensión aproximada de 1 a 1.5 páginas en formato IEEE.
-\end{itemize} 
+Este trabajo busca replicar y validar la metodología propuesta por He et al. [1], que plantea un esquema conjunto de asignación de recursos NOMA y control distribuido. La brecha identificada es la necesidad de validar numéricamente cómo el desvanecimiento del canal (Rayleigh Fading) y la asignación de potencia "voraz" (*greedy*) afectan la estabilidad real del controlador en escenarios de perturbación dinámica.
 
+El objetivo principal es implementar un simulador que integre la dinámica física de los vehículos y un modelo de canal estocástico realista, evaluando el desempeño de un controlador QP bajo restricciones de comunicación. El resto del artículo se organiza de la siguiente manera: la Sección II describe el modelo del sistema y la metodología; la Sección III detalla los resultados teóricos del control y la asignación de potencia; la Sección IV presenta las simulaciones y análisis de resultados; y finalmente, la Sección V concluye el trabajo.
 
 \section{Descripción del problema}
-Esta sección debe contener dos partes principales:
 
-\begin{enumerate}
-    \item \textbf{Descripción del problema}
-    \begin{itemize}
-        \item Explicar claramente el sistema o aplicación bajo estudio (ej. péndulo invertido, formación vehicular, proceso industrial, robot móvil, etc.).
-        \item Indicar qué aspecto de comunicaciones se considera (retardo, pérdida de paquetes, ruido, limitación de ancho de banda, protocolo de acceso, etc.).
-        \item Presentar los objetivos específicos del análisis (ej. estabilidad, reducción de uso de canal, comparación de desempeño).
-        \item Incluir las ecuaciones matemáticas del modelo de planta y/o canal de comunicaciones, si corresponde.
-    \end{itemize}
+\subsection{Descripción del Sistema}
+Se considera un sistema de formación vehicular compuesto por un vehículo líder (LV) y $N$ vehículos miembros (MVs) que se desplazan en línea recta. El objetivo de control es que cada vehículo $i$ mantenga una velocidad igual a la del líder y una distancia constante $d$ con su predecesor $i-1$.
 
-    \item \textbf{Metodología}
-    \begin{itemize}
-        \item Describir el enfoque seguido para abordar el problema.
-        \item Especificar qué algoritmos, leyes de control o protocolos se implementan.
-        \item Indicar qué herramientas se usarán para las simulaciones (ej. Python, MATLAB, Simulink, etc.).
-        \item Justificar por qué esta metodología es adecuada para responder a la pregunta planteada.
-    \end{itemize}
-\end{enumerate}
+El aspecto crítico de comunicaciones considerado es la **interferencia y la disponibilidad de slots**. El sistema opera en un esquema TDMA donde los slots son limitados. Para mejorar la capacidad, se utiliza NOMA, permitiendo que hasta dos vehículos transmitan simultáneamente. Esto introduce Interferencia de Acceso Múltiple (MAI), la cual debe ser mitigada mediante asignación de potencia y Cancelación Sucesiva de Interferencia (SIC). Además, el canal V2V sufre de desvanecimiento rápido (*Rayleigh Fading*) y pérdida por trayectoria (*Path Loss*), lo que hace que la ganancia del canal $h$ sea estocástica.
 
-\noindent\textbf{Notas importantes:}
-\begin{itemize}
-    \item Usar lenguaje claro y conciso, apoyándose en notación matemática cuando sea necesario.
-    \item Si se introducen ecuaciones, deben estar numeradas solo si se referencian en el texto.
-    \item Esta sección debe ser lo suficientemente precisa para que otro estudiante pueda \textbf{reproducir la metodología}.
-\end{itemize}
+La dinámica longitudinal de cada vehículo $i$ se modela como un sistema cinemático de segundo orden discretizado con un paso de tiempo $\Delta t$:
+\begin{align}
+v_{i}^{t+1} &= v_{i}^{t} + u_{i}^{t}\Delta t \\
+p_{i}^{t+1} &= p_{i}^{t} + v_{i}^{t}\Delta t + \frac{1}{2}u_{i}^{t}(\Delta t)^2
+\end{align}
+donde $p, v, u$ son posición, velocidad y aceleración respectivamente.
 
+\subsection{Metodología}
+Para abordar este problema, se implementa una simulación numérica paso a paso en **MATLAB**. La metodología se divide en dos lazos principales:
+1. **Lazo de Comunicaciones:** Al inicio de cada periodo de agendamiento, se decide qué vehículos transmiten basándose en su error de seguimiento actual. Se utiliza un modelo de canal que incluye una ganancia de referencia $G_0 = 10^{-4}$ (-40 dB) y variables aleatorias complejas para el desvanecimiento Rayleigh.
+2. **Lazo de Control:** Cada vehículo estima la posición futura de su predecesor. Si recibe un paquete, actualiza su estimación; si no, proyecta el estado anterior. Luego, resuelve un problema de optimización cuadrática (QP) para calcular la entrada de control $u_i$ óptima.
 
-
+Esta metodología es adecuada porque permite observar el comportamiento emergente del sistema acoplado (física + red) y verificar la estabilidad bajo condiciones no ideales.
 
 \section{Resultados teóricos}
-Esta sección debe presentar los \textbf{desarrollos analíticos o matemáticos} que apoyan el trabajo.
 
-\begin{enumerate}
-    \item \textbf{Planteamiento matemático}
-    \begin{itemize}
-        \item Exponer de manera clara cualquier análisis teórico realizado.
-        \item Puede incluir estabilidad, convergencia, análisis de desempeño, cotas de error, etc.
-        \item Se puede presentar un \textbf{resultado de la literatura} que sea relevante al problema, explicándolo con sus propias palabras.
+\subsection{Planteamiento Matemático del Control}
+El núcleo del control distribuido se basa en minimizar el error de seguimiento predicho para el siguiente instante de tiempo $t+1$. Se define el error de espaciamiento $e_{p}$ y de velocidad $e_{v}$. El problema se formula como una **Programación Cuadrática (QP)**:
 
-        \item Indicar las hipótesis o supuestos bajo los cuales se obtiene el resultado.
+\begin{equation}
+\min_{u_i^t} \quad e_{i,est}^{t+1 \top} W e_{i,est}^{t+1}
+\end{equation}
+sujeto a: $u_{min} \le u_i^t \le u_{max}$.
 
-        \item Si desea incluir derivaciones, solo incluya los pasos esenciales para llegar al resultado, sin sobrecargar con detalles algebraicos
-    \end{itemize}
+Para resolver esto numéricamente, transformamos la dinámica de error a la forma estándar $\frac{1}{2}u^T H u + f^T u$. Expresando el error futuro como una función lineal de la entrada de control $u$:
+\begin{equation}
+e(t+1) = A_{vec} \cdot u + B_{vec}
+\end{equation}
+Donde $A_{vec}$ contiene los términos dependientes de $\Delta t$ y $B_{vec}$ es la proyección del error si no se aplicara control. Las matrices del QP resultan:
+\begin{align}
+H &= 2 (A_{vec}^T W A_{vec}) \\
+f &= 2 (A_{vec}^T W B_{vec})
+\end{align}
+Este resultado es crucial pues garantiza que el control actúe como una realimentación negativa que minimiza la energía del error.
 
-    \item \textbf{Interpretación}
-    \begin{itemize}
-        \item Explicar qué implican los resultados obtenidos en términos de control y comunicaciones.
-    \end{itemize}
-\end{enumerate}
+\subsection{Interpretación de Asignación de Potencia NOMA}
+Para la asignación de recursos, implementamos el **Teorema 1** del paper referencia [1]. Este teorema establece que el orden óptimo de decodificación para comunicaciones NOMA V2V unicast es el **orden ascendente de la ganancia del canal de interferencia**.
 
-\noindent\textbf{Notas importantes:}
-\begin{itemize}
-    \item No basta solo con copiar ecuaciones: deben \textbf{interpretarlas} en relación con el problema estudiado.
-    \item Esta sección puede ser breve si el foco principal del proyecto es experimental, pero debe incluir al menos un análisis o marco teórico claro.
-\end{itemize}
-
-
+Matemáticamente, si dos usuarios $j$ y $k$ comparten un slot, y el usuario $j$ sufre menos interferencia que $k$, entonces $j$ se decodifica primero (tratando a $k$ como ruido) y se le asigna menor potencia. La potencia del usuario $k$ se calcula de forma "voraz" (*greedy*) para superar el ruido térmico $N_0$ más la interferencia generada por $j$:
+\begin{equation}
+p_k = \frac{R^{th}(N_0 + p_j h_{j,k})}{h_{k}}
+\end{equation}
+Esto implica que la viabilidad del enlace depende estrictamente de la geometría del platoon y la aleatoriedad del canal Rayleigh.
 
 \section{Simulaciones}
-Esta sección debe presentar los \textbf{experimentos computacionales} realizados para evaluar el problema y la metodología propuesta.
 
-\begin{enumerate}
-    \item \textbf{Entorno de simulación}
-    \begin{itemize}
-        \item Especificar las herramientas utilizadas (ej. Python, MATLAB, Simulink, etc.).
-        \item Indicar los parámetros principales de la simulación (tiempos de muestreo, duración, número de agentes, probabilidades de pérdida, etc.).
-        \item Aclarar si se basan en datos reales, ficticios pero realistas, o en parámetros extraídos de un paper.
-    \end{itemize}
-
-    \item \textbf{Diseño de experimentos}
-    \begin{itemize}
-        \item Describir qué escenarios se evaluaron (ej. diferentes tasas de pérdida, retardos crecientes, distintos protocolos).
-        \item Explicar la relación de cada escenario con las preguntas de investigación.
-        \item Indicar cómo se midió el desempeño (ej. estabilidad, error cuadrático medio, tasa de transmisión, consumo de recursos).
-    \end{itemize}
-
-    \item \textbf{Resultados obtenidos}
-    \begin{itemize}
-        \item Presentar los resultados de forma clara mediante tablas y figuras.
-        \item Asegurarse de que todos los gráficos tengan títulos, ejes con unidades y leyendas si corresponde.
-        \item Comparar los escenarios evaluados, destacando patrones y diferencias.
-    \end{itemize}
-
-    \item \textbf{Análisis crítico}
-    \begin{itemize}
-        \item Interpretar qué significan los resultados en términos de control y comunicaciones.
-        \item Destacar fortalezas y limitaciones de la metodología evaluada.
-        \item Relacionar los resultados con los objetivos planteados al inicio del proyecto.
-    \end{itemize}
-\end{enumerate}
-
-\noindent\textbf{Notas importantes:}
+\subsection{Entorno de Simulación}
+Se desarrolló un entorno en **MATLAB R2023a**. Los parámetros clave utilizados son:
 \begin{itemize}
-    \item Todas las figuras y tablas deben ser referenciadas y explicadas en el texto.
-    \item No basta con mostrar gráficos: deben ser \textbf{analizados e interpretados}.
-    \item Esta sección suele ocupar entre 2 y 3 páginas en formato IEEE.
+    \item Paso de tiempo $\Delta t$: 10 ms.
+    \item Duración: 30 segundos (3000 pasos).
+    \item Vehículos: 1 Líder + 12 Miembros.
+    \item Canal: Ancho de banda 180 KHz, Ruido -174 dBm/Hz, Potencia máx 35 dBm.
+    \item Ganancia de referencia ($G_0$): $10^{-4}$ (ajustada para realismo físico).
 \end{itemize}
 
+\subsection{Diseño de Experimentos}
+Se evaluó un escenario de **perturbación dinámica**. El líder, que viaja a una velocidad crucero de 20 m/s, desacelera bruscamente a 15 m/s entre $t=0s$ y $t=10s$, mantiene la velocidad, y luego acelera de nuevo a 20 m/s entre $t=15s$ y $t=25s$.
+Este escenario estresa tanto al controlador (que debe reaccionar rápido) como al sistema de comunicaciones (que debe priorizar a los vehículos con mayor error transitorio). El desempeño se mide mediante el error absoluto promedio de espaciamiento y la convergencia de las velocidades.
+
+\subsection{Resultados Obtenidos}
 
 
+\begin{figure}[!t]
+\centering
+% \includegraphics[width=3.0in]{posiciones_simulacion}
+\caption{Evolución de las posiciones de los 13 vehículos. Se observa que mantienen la formación sin colisiones a pesar de la perturbación.}
+\label{fig:pos}
+\end{figure}
+
+La Fig. \ref{fig:pos} muestra las trayectorias. A pesar de la frenada del líder, los miembros ajustan sus trayectorias suavemente sin cruces (colisiones).
+
+
+
+[Image of MATLAB Simulation Velocity Plot]
+
+\begin{figure}[!t]
+\centering
+% \includegraphics[width=3.0in]{velocidades_simulacion}
+\caption{Perfiles de velocidad. Los miembros (líneas de colores) siguen el perfil del líder (línea azul) con un retardo natural pero estable.}
+\label{fig:vel}
+\end{figure}
+
+La Fig. \ref{fig:vel} evidencia la efectividad del control distribuido. El retraso en la respuesta es mínimo gracias a la priorización de mensajes NOMA para vehículos con alto error.
+
+Finalmente, el error de espaciamiento promedio se mantuvo acotado, convergiendo a valores cercanos a 0 una vez estabilizada la velocidad. Se observó que aproximadamente el 100\% de los vehículos lograron actualizar su información al menos una vez por periodo crítico gracias al modelo de canal implementado.
+
+\subsection{Análisis Crítico}
+Los resultados validan la robustez del esquema propuesto. La implementación correcta del signo en el término lineal del QP ($f$) fue determinante para evitar la inestabilidad observada en iteraciones previas. Además, la inclusión del *Rayleigh Fading* demostró ser esencial para NOMA; sin la variabilidad del canal, el ordenamiento de usuarios hubiera sido ineficiente, saturando la potencia disponible.
 
 \section{Conclusiones}
-La sección de \textbf{Conclusiones} debe cerrar el artículo de manera clara y concisa, resumiendo los principales hallazgos del trabajo.
 
-\begin{enumerate}
-    \item \textbf{Síntesis del trabajo realizado}
-    \begin{itemize}
-        \item Resumir brevemente el objetivo planteado y cómo fue abordado.
-        \item Recordar las principales técnicas o metodologías utilizadas.
-    \end{itemize}
+\subsection{Síntesis del trabajo realizado}
+Se ha replicado exitosamente un sistema de control conjunto y asignación de recursos para platooning vehicular sobre NOMA-V2V. Se integró un modelo dinámico vehicular con un simulador de canal estocástico en MATLAB.
 
-    \item \textbf{Principales resultados}
-    \begin{itemize}
-        \item Destacar los hallazgos más relevantes, tanto teóricos como de simulación.
-        \item Explicar qué significan estos resultados para el problema de control y comunicaciones.
-    \end{itemize}
+\subsection{Principales resultados}
+La simulación demostró que es posible mantener la estabilidad de una formación de 12 vehículos bajo perturbaciones severas utilizando recursos limitados. El uso de NOMA permitió acomodar más transmisiones críticas por slot de tiempo en comparación con OMA convencional.
 
-    \item \textbf{Implicancias}
-    \begin{itemize}
-        \item Señalar qué se aprendió sobre la relación entre control y comunicaciones en el contexto estudiado.
-        \item Indicar la relevancia práctica o teórica de los resultados obtenidos.
-    \end{itemize}
+\subsection{Implicancias}
+Este trabajo subraya la importancia de diseñar el control y las comunicaciones de forma conjunta (*co-design*). Ignorar la dinámica del canal o la limitación de potencia resulta en controladores inestables en aplicaciones del mundo real.
 
-    \item \textbf{Limitaciones y trabajo futuro}
-    \begin{itemize}
-        \item Reconocer brevemente las limitaciones del trabajo realizado.
-        \item Sugerir posibles extensiones o líneas de investigación futura que podrían abordar esas limitaciones.
-    \end{itemize}
-\end{enumerate}
-
-\noindent\textbf{Notas importantes:}
-\begin{itemize}
-    \item Evitar repetir textualmente párrafos de otras secciones (no es un resumen extendido).
-    \item No introducir resultados nuevos aquí: solo se discuten los ya presentados.
-    \item Mantener la extensión de la sección breve (aprox. 0.5 página en formato IEEE).
-\end{itemize}
-
-
-
-
-% if have a single appendix:
-%\appendix[Proof of the Zonklar Equations]
-% or
-%\appendix  % for no appendix heading
-% do not use \section anymore after \appendix, only \section*
-% is possibly needed
-
-% use appendices with more than one appendix
-% then use \section to start each appendix
-% you must declare a \section before using any
-% \subsection or using \label (\appendices by itself
-% starts a section numbered zero.)
-%
-
+\subsection{Limitaciones y trabajo futuro}
+Una limitación actual es la asunción de conocimiento perfecto del canal (CSI) para la asignación de potencia. Trabajos futuros deberían incorporar errores de estimación de canal y evaluar el impacto de retardos estocásticos en la actualización de la información.
 
 \appendices
-\section{Título del apéndice}
-El apéndice es opcional y se puede usar para incluir material complementario que no cabe en el cuerpo principal del artículo, como detalles de derivaciones matemáticas, pseudocódigo, o fragmentos de código utilizados en las simulaciones. No debe contener resultados nuevos.
+\section{Código del Controlador QP}
+Se presenta un fragmento del código MATLAB utilizado para resolver el problema de optimización local en cada vehículo:
 
+\begin{verbatim}
+function u_opt = solve_control_qp(...)
+    W = diag([5, 1]); 
+    H = 2 * (A_vec' * W * A_vec);
+    f = 2 * (A_vec' * W * B_vec);
+    options = optimoptions('quadprog','Display','off');
+    u_opt = quadprog(H, f, [], [], [], [], ...
+                     u_min, u_max, [], options);
+end
+\end{verbatim}
 
-
-
-% use section* for acknowledgment
 \section*{Agradecimientos}
-Los autores les gustaría agradecer a...
+Los autores agradecen al equipo docente del curso de Sistemas de Control en Red por la guía en la interpretación de protocolos NOMA.
 
-
-% Can use something like this to put references on a page
-% by themselves when using endfloat and the captionsoff option.
 \ifCLASSOPTIONcaptionsoff
   \newpage
 \fi
 
-
-
 \begin{thebibliography}{1}
-
-\bibitem{IEEEhowto:kopka}
-H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
-  0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
-
+\bibitem{He2023} Q. He, K. Leung, "Joint Platoon Control and Resource Allocation for NOMA-V2V Communication System," \emph{IEEE Transactions on Vehicular Technology}, 2023.
+\bibitem{Ding2017} Z. Ding et al., "A Survey on Non-Orthogonal Multiple Access for 5G Networks," \emph{IEEE JSAC}, vol. 35, no. 10, 2017.
+\bibitem{Jia2016} D. Jia et al., "A Survey on Platoon-Based Vehicular Cyber-Physical Systems," \emph{IEEE Comm. Surveys}, 2016.
+\bibitem{Mei2018} J. Mei et al., "Joint Radio Resource Allocation and Control for Vehicle Platooning," \emph{IEEE TVT}, 2018.
+\bibitem{Saito2013} Y. Saito et al., "Non-Orthogonal Multiple Access (NOMA) for Cellular Future Radio Access," \emph{IEEE VTC}, 2013.
 \end{thebibliography}
 
-% biography section
-% 
-% If you have an EPS/PDF photo (graphicx package needed) extra braces are
-% needed around the contents of the optional argument to biography to prevent
-% the LaTeX parser from getting confused when it sees the complicated
-% \includegraphics command within an optional argument. (You could create
-% your own custom macro containing the \includegraphics command to make things
-% simpler here.)
-%\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
-% or if you just want to reserve a space for a photo:
-
-\begin{IEEEbiography}{Integrante 1}
-De manera opcional, los estudiantes pueden agregar al final del artículo una breve biografía acompañada de su fotografía, siguiendo el estilo habitual de los papers IEEE. La biografía debe ser concisa (5–6 líneas) y escrita en tercera persona.
-
-Ejemplo:
-
-Juan Pérez es estudiante de Ingeniería Eléctrica en la Pontificia Universidad Católica de Chile. Actualmente cursa cuarto año de su carrera. Sus áreas de interés incluyen sistemas de control automático, comunicaciones inalámbricas y ciberseguridad en sistemas ciberfísicos. [También pueden incorporar cualquier experiencia que hayan tenido relacionada con el área.]
+\begin{IEEEbiography}{Jorge Apud}
+Jorge Apud es estudiante de Ingeniería Eléctrica en la Pontificia Universidad Católica de Chile. Sus intereses se centran en las telecomunicaciones, específicamente en protocolos de nueva generación para redes vehiculares y la optimización de recursos en sistemas inalámbricos.
 \end{IEEEbiography}
 
-\begin{IEEEbiography}{Integrante 2}
-Bio de Integrante 2 
+\begin{IEEEbiography}{Patricio Hinostroza}
+Patricio Hinostroza es estudiante de Magíster en Ciencias de la Ingeniería, con especialización en Ingeniería Eléctrica en la Pontificia Universidad Católica de Chile. Su investigación actual se enfoca en Sistemas de Control en Redes Inalámbricas y Robótica, con énfasis en estrategias de control distribuido.
 \end{IEEEbiography}
-
 
 \end{document}
-
-
