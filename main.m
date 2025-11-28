@@ -20,10 +20,18 @@ Platoon.len = 5; % vehicle length
 Platoon.e_th = 0.1; % scheduling trigger threshold (m) -- small
 Platoon.u_max = 2; % acceleration bounds
 Platoon.u_min = -2;
+Platoon.m = 1500;
+lims.Fmax = Platoon.u_max * Platoon.m;
+lims.Fmin = Platoon.u_min * Platoon.m;
+lims.dFmax = (9e-7) / Platoon.m;
+lims.dFmin = -(9e-7) / Platoon.m;
+
 %% 2. INICIALIZACIÓN DE ESTADOS (positions in meters, v in m/s)
 POS = zeros(Platoon.N + 1, Sim.Steps); % index 1: leader (vehicle 0), 2: MV1, ...
 VEL = zeros(Platoon.N + 1, Sim.Steps);
 ACC = zeros(Platoon.N + 1, Sim.Steps);
+FOR = zeros(Platoon.N + 1, Sim.Steps);
+DFOR = zeros(Platoon.N + 1, Sim.Steps);
 % Initial states (paper layout) -> p_i(0) = (N - i)*(d_des + len)
 v_cruise = 20;
 for idx = 1:(Platoon.N + 1)
@@ -127,16 +135,19 @@ if allocated_powers(k) > 0
 % read predecessor's *current* state
                 pos_tx = POS(tx_id + 1, t);
                 vel_tx = VEL(tx_id + 1, t);
-                acc_tx = ACC(tx_id + 1, t); % Use current t for all (fixed bug)
-                LastInfo(rx_id, :) = [pos_tx, vel_tx, acc_tx, current_time];
+                acc_tx = ACC(tx_id + 1, t);
+                for_tx = FOR(tx_id + 1, t);
+                dfor_tx = DFOR(tx_id + 1, t);
+                LastInfo(rx_id, :) = [pos_tx, vel_tx, acc_tx, for_tx, dfor_tx,current_time];
 end
 end
 else
 % no scheduled users this slot
 end
-% --- E. Physics update for all vehicles (apply ACC computed above)
-for idx = 1:(Platoon.N + 1)
-        [POS(idx, t+1), VEL(idx, t+1)] = update_physics(POS(idx, t), VEL(idx, t), ACC(idx, t), Sim.dt);
+[POS(1, t+1), VEL(1, t+1), FOR(1, t+1)] = update_physics(POS(1, t), VEL(idx, t), ACC(idx, t), Sim.dt);
+% --- E. Physics update for non leader vehicles (apply dF computed above)
+for idx = 2:(Platoon.N + 1)
+        [POS(idx, t+1), VEL(idx, t+1), FOR(idx, t+1)] = update_physics_smooth(POS(idx, t), VEL(idx, t), FOR(idx, t), DFOR(idx, t), Platoon.m, Sim.dt, lims);
 end
 end
 % accumulate metrics
@@ -278,11 +289,33 @@ end
     over_idx = powers > Comm.P_max;
     powers(over_idx) = 0; % mark as failed
 end
-function [p_next, v_next] = update_physics(p, v, u, dt)
-    v_next = v + u * dt;
-    p_next = p + v * dt + 0.5 * u * dt^2;
+
+function [p_next, v_next] = update_physics(p, v, u, dt) 
+v_next = v + u * dt; 
+p_next = p + v * dt + 0.5 * u * dt^2;
 end
+
+function [p_next, v_next, F_next] = update_physics_smooth(p, v, F, u_F, m, dt, lims)
+
+    % Actualización de la fuerza
+    F_next = F + u_F * dt;
+
+    if F_next < lims.Fmin
+        F_next = lims.Fmin;
+    elseif F_next > lims.Fmax
+        F_next = lims.Fmax;
+    end
+
+    % Aceleración asociada a la nueva fuerza
+    a_next = F_next / m;
+
+    % Actualización de velocidad y posición con la nueva aceleración
+    v_next = v + a_next * dt;
+    p_next = p + v * dt + 0.5 * a_next * dt^2;
+end
+
 function u = solve_control_qp(p_i, v_i, pred, Platoon, dt)
+% TODO: CHANGE MATRICES BASED ON NEW MODEL
 % Implements Eq (18) from paper (1D scalar QP)
 % Use formulation: e = B + A*u, min (e' W e), note signs from derivation
     e_p = pred.p_next - p_i - (Platoon.d_des + Platoon.len); % predicted spacing error at t+1 (using pred p_next as pred at t+1)
@@ -321,8 +354,10 @@ function est = estimate_predecessor_state(last_info, t_now, dt)
 % then one further step to produce pred.p_next and pred.v_next for controller usage.
     p_rx = last_info(1);
     v_rx = last_info(2);
-    u_rx = last_info(3);
-    t_rx = last_info(4); % time in seconds when packet was received
+    a_rx = last_info(3);
+    f_rx = last_info(4);
+    df_rx = last_info(5);
+    t_rx = last_info(6); % time in seconds when packet was received
 if t_rx == 0
 % no packet ever received: assume predecessor at initial condition (no motion)
         delta_t = 0;
@@ -332,12 +367,13 @@ if delta_t < 0
             delta_t = 0;
 end
 end
-% project to current t
-    v_est = v_rx + u_rx * delta_t;
-    p_est = p_rx + v_rx * delta_t + 0.5 * u_rx * (delta_t^2);
+% project to current t 
+%TODO: CHANGE HOW TO UPDATE PHYSICS? 
+    v_est = v_rx + a_rx * delta_t;
+    p_est = p_rx + v_rx * delta_t + 0.5 * a_rx * (delta_t^2);
 % now predict one step ahead (t+1) for controller (paper minimizes e_{t+1})
-    est.v_next = v_est + u_rx * dt;
-    est.p_next = p_est + v_est * dt + 0.5 * u_rx * dt^2;
+    est.v_next = v_est + a_rx * dt;
+    est.p_next = p_est + v_est * dt + 0.5 * a_rx * dt^2;
 end
 function e = calculate_errors(pos_t, vel_t, Platoon)
     e = zeros(Platoon.N, 1);
