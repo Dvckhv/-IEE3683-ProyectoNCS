@@ -33,8 +33,7 @@ for i = 1:(Platoon.N + 1)
 end
 LastInfo = zeros(Platoon.N, 4);
 for i = 1:Platoon.N
-    leader_idx = i;
-    LastInfo(i, :) = [POS(leader_idx,1), VEL(leader_idx,1), 0, 0];
+    LastInfo(i, :) = [POS(i,1), VEL(i,1), 0, 0];
 end
 LastAllocated = zeros(Platoon.N, 1); % tl por MV, inicial 0
 %% 3. BUCLE PRINCIPAL DE SIMULACIÓN
@@ -47,17 +46,6 @@ TotalComm = zeros(1, Sim.Steps);
 TotalPower = zeros(1, Sim.Steps);
 for t = 1 : Sim.Steps - 1
     current_time = t * Sim.dt;
-% --- A. DINÁMICA DEL LÍDER ---
-if current_time < 10
-        u_leader = -0.5; % Corregido a -0.5 m/s² para coincidir con Δv=-5 en 10s
-elseif current_time < 15
-        u_leader = 0;
-elseif current_time < 25
-        u_leader = 0.5; % Corregido a 0.5 m/s²
-else
-        u_leader = 0;
-end
-    ACC(1, t) = u_leader;
 % --- B. ASIGNACIÓN DE RECURSOS (Cada T slots) ---
 if mod(t-1, Sim.T_scheduling) == 0
         errors = calculate_errors(POS(:,t), VEL(:,t), Platoon);
@@ -71,6 +59,24 @@ if mod(t-1, Sim.T_scheduling) == 0
         end
         total_slots_assigned = sum(UserSchedule(:));
 end
+% --- A. DINÁMICA DEL LÍDER ---
+if current_time < 10
+        u_leader = -0.5; % Corregido a -0.5 m/s^2 para coincidir con Δv=-5 en 10s
+elseif current_time < 15
+        u_leader = 0;
+elseif current_time < 25
+        u_leader = 0.5; % Corregido a 0.5 m/s^2
+else
+        u_leader = 0;
+end
+    ACC(1, t) = u_leader;
+% --- D. CONTROL DISTRIBUIDO para MVs (antes de comunicación) ---
+    for i = 1:Platoon.N
+        mv_idx = i + 1;
+        est_state = estimate_predecessor_state(LastInfo(i,:), current_time, Sim.dt);
+        u_opt = solve_control_qp(POS(mv_idx,t), VEL(mv_idx,t), est_state, Platoon, Sim.dt);
+        ACC(mv_idx, t) = u_opt;
+    end
 % --- C. COMUNICACIÓN Y NOMA (Cada slot) ---
     slot_idx = mod(t-1, Sim.T_scheduling) + 1;
     scheduled_users = find(UserSchedule(:, slot_idx) == 1);
@@ -81,7 +87,6 @@ if ~isempty(scheduled_users)
         H_interf_matrix = zeros(num_users,num_users);
 for m = 1:num_users
             rx = scheduled_users(m); % MV i
-            tx_self = rx; % Predecesor es rx (índice MV 1..N, pred 1 es leader 0, pero índice POS tx_self)
             pos_rx = POS(rx + 1, t); % MV rx es POS(rx+1)
             pos_tx_self = POS(rx, t); % Predecesor POS(rx)
             % Canal útil h_{i-1,i}
@@ -113,20 +118,15 @@ if tx_id == 1
 else
                     pos_tx = POS(tx_id, t);
                     vel_tx = VEL(tx_id, t);
-                    acc_tx = ACC(tx_id, t); % Ahora control antes? No, ver abajo
+                    acc_tx = ACC(tx_id, t);
 end
                 LastInfo(rx_id, :) = [pos_tx, vel_tx, acc_tx, current_time];
 end
 end
 end
-% --- D. CONTROL DISTRIBUIDO Y FÍSICA ---
-    [POS(1,t+1), VEL(1,t+1)] = update_physics(POS(1,t), VEL(1,t), ACC(1,t), Sim.dt);
-    for i = 1:Platoon.N
-        mv_idx = i + 1;
-        est_state = estimate_predecessor_state(LastInfo(i,:), current_time, Sim.dt);
-        u_opt = solve_control_qp(POS(mv_idx,t), VEL(mv_idx,t), est_state, Platoon, Sim.dt);
-        ACC(mv_idx, t) = u_opt;
-        [POS(mv_idx,t+1), VEL(mv_idx,t+1)] = update_physics(POS(mv_idx,t), VEL(mv_idx,t), u_opt, Sim.dt);
+% --- FÍSICA para todos ---
+    for ii = 1:Platoon.N + 1
+        [POS(ii,t+1), VEL(ii,t+1)] = update_physics(POS(ii,t), VEL(ii,t), ACC(ii,t), Sim.dt);
     end
 end
 CumulComm = cumsum(TotalComm);
@@ -189,10 +189,9 @@ if e_i <= Platoon.e_th
 continue;
 end
         delta_e_max = 0.5 * Platoon.u_max * (Sim.T_scheduling * Sim.dt)^2;
-        delta_e_max = max(delta_e_max, 1e-9);
-        avg_max = Comm.O_max * Sim.T_scheduling / Platoon.N;
-        f_raw = e_i / delta_e_max;
-        f_i = min(f_raw, avg_max);
+        delta_e_max = max(delta_e_max, 1e-9);;
+        f_i = ceil( abs(e_i) / delta_e_max );
+        f_i = min( f_i, Comm.O_max * Sim.T_scheduling );
         f_i = round(f_i); % Redondear a entero para número de slots
         if f_i == 0
             continue;
@@ -298,12 +297,14 @@ end
 end
 function h_gain = calculate_channel_gain(pos_tx, pos_rx)
     alpha = 3;
-    G0 = 1;
+    G0 = 1e-4;
     epsilon = 1e-6;
     dist = abs(pos_tx - pos_rx);
     dist = max(dist, epsilon);
     path_loss = G0 * (dist .^ (-alpha));
     h_small = (randn(1,1) + 1i * randn(1,1)) / sqrt(2);
     rayleigh_gain = abs(h_small)^2;
+    % Para replicación determinista, comenta la línea siguiente y usa rayleigh_gain = 1;
+    % rayleigh_gain = 1;
     h_gain = path_loss * rayleigh_gain;
 end
