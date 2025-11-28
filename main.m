@@ -17,7 +17,7 @@ Comm.O_max = 2; % max NOMA users per slot
 Platoon.N = 12; % number of followers
 Platoon.d_des = 10; % desired inter-vehicle distance
 Platoon.len = 5; % vehicle length
-Platoon.e_th = 0.01; % scheduling trigger threshold (m) -- small
+Platoon.e_th = 0.1; % scheduling trigger threshold (m) -- small
 Platoon.u_max = 2; % acceleration bounds
 Platoon.u_min = -2;
 %% 2. INICIALIZACIÓN DE ESTADOS (positions in meters, v in m/s)
@@ -45,6 +45,7 @@ CumulComm = zeros(1, Sim.Steps);
 CumulEnergy = zeros(1, Sim.Steps);
 TotalComm = zeros(1, Sim.Steps);
 TotalPower = zeros(1, Sim.Steps);
+TotalSchedule = zeros(Platoon.N, Sim.Steps);
 fprintf('Iniciando simulación de %d pasos (dt=%.3f s)...\n', Sim.Steps, Sim.dt);
 %% 3. BUCLE PRINCIPAL DE SIMULACIÓN
 UserSchedule = zeros(Platoon.N, Sim.T_scheduling); % schedule matrix
@@ -65,6 +66,7 @@ end
 if mod(t-1, Sim.T_scheduling) == 0
         errors = calculate_errors(POS(:,t), VEL(:,t), Platoon);
         UserSchedule = run_stage_1_scheduling(errors, Sim, Platoon, Comm, LastAllocated);
+        TotalSchedule(:,t:t+9) = UserSchedule;
 % update LastAllocated for diagnostics (last assigned slot index)
 for i = 1:Platoon.N
             assigned_slots = find(UserSchedule(i, :) == 1);
@@ -143,6 +145,9 @@ CumulEnergy = cumsum(TotalPower) * Sim.dt;
 % report
 n_updates = nnz(LastInfo(:,4) > 0);
 fprintf('Número de LastInfo actualizados al menos una vez: %d/%d\n', n_updates, Platoon.N);
+
+
+
 %% Plots (paper-style)
 figure('Position',[100 100 900 900]);
 spacing_errors = zeros(Platoon.N, Sim.Steps);
@@ -151,7 +156,7 @@ for i = 1:Platoon.N
         spacing_errors(i,tt) = (POS(i,tt) - POS(i+1,tt)) - (Platoon.d_des + Platoon.len);
 end
 end
-subplot(4,1,1); plot((0:Sim.Steps-1)*Sim.dt, spacing_errors); title('Spacing Error'); grid on; ylabel('m');
+subplot(4,1,1); plot((0:Sim.Steps-1)*Sim.dt, spacing_errors); title('Spacing Error'); grid on; ylabel('m'); legend('1','2,','3','4','5,','6','7','8,','9','10','11,','12');
 subplot(4,1,2); plot((0:Sim.Steps-1)*Sim.dt, VEL'); title('Velocidades (m/s)'); grid on; ylabel('m/s');
 subplot(4,1,3); plot((0:Sim.Steps-1)*Sim.dt, mean(abs(spacing_errors), 1)); title('Average Absolute Spacing Error'); grid on;
 ylabel('Error (m)');
@@ -159,6 +164,31 @@ subplot(4,1,4);
 yyaxis left; plot((0:Sim.Steps-1)*Sim.dt, CumulComm); ylabel('Cumulative Packets Allocated');
 yyaxis right; plot((0:Sim.Steps-1)*Sim.dt, CumulEnergy); ylabel('Cumulative Energy (J)');
 xlabel('Time (s)'); grid on;
+
+    
+[N, T] = size(TotalSchedule);
+
+figure;
+for i = 1:N
+    subplot(N,1,i);
+    stem((0:Sim.Steps-1)*Sim.dt, TotalSchedule(i,:), 'filled', 'MarkerSize', 3);
+    ylim([-0.2, 1.2]);
+    grid on;
+    title(sprintf('Vehículo %d', i));
+    ylabel('Tx');
+    if i == N
+        xlabel('Tiempo (slots)');
+    else
+        set(gca, 'XTickLabel', []); % Esconde etiquetas para compactar
+    end
+end
+
+sgtitle('Schedule de transmisión de cada Vehículo');
+
+
+
+
+
 %% ------------------- FUNCIONES LOCALES -------------------
 function sched = run_stage_1_scheduling(errors, Sim, Platoon, Comm, last_alloc)
 % Stage-1 EXACT per paper Eqs (16)-(17)
