@@ -1,4 +1,4 @@
-%% Joint Platoon Control and Resource Allocation (NOMA-V2V)
+  %% Joint Platoon Control and Resource Allocation (NOMA-V2V)
 % Replicación del Paper - Esqueleto en MATLAB
 clear; clc; close all;
 
