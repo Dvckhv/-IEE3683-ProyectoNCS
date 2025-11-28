@@ -1,4 +1,4 @@
-  %% Joint Platoon Control and Resource Allocation (NOMA-V2V)
+%% Joint Platoon Control and Resource Allocation (NOMA-V2V)
 % Replicación del Paper - Esqueleto en MATLAB
 clear; clc; close all;
 
@@ -79,7 +79,8 @@ for t = 1 : Sim.Steps - 1
         UserSchedule = run_stage_1_scheduling(errors, Sim, Platoon, Comm);
     end
     
-   % --- C. COMUNICACIÓN Y NOMA (Cada slot) ---
+    % --- C. COMUNICACIÓN Y NOMA (Cada slot) ---
+    % Determinar qué usuarios transmiten en este slot relativo (1 a T)
     slot_idx = mod(t-1, Sim.T_scheduling) + 1;
     scheduled_users = find(UserSchedule(:, slot_idx) == 1);
     
@@ -125,11 +126,11 @@ for t = 1 : Sim.Steps - 1
             end
         end
         
-        % 3. Ejecutar Stage 2: Power Allocation con DATOS REALES
-        % Ahora pasamos ambas ganancias a la función
-        allocated_powers = run_stage_2_power(scheduled_users, H_signal, H_interference, Comm);
+        % 2. Ejecutar Stage 2: Power Allocation
+        % Asigna potencias basadas en SINR target y NOMA decoding order
+        allocated_powers = run_stage_2_power(scheduled_users, H_gains, Comm);
         
-        % 4. Actualizar información si la comunicación es exitosa
+        % 3. Actualizar información si la comunicación es exitosa
         for k = 1:length(scheduled_users)
             u_id = scheduled_users(k);
             % Si potencia > 0 y < Pmax, asumimos éxito (simplificado)
@@ -369,29 +370,4 @@ function e = calculate_errors(pos_t, vel_t, Platoon)
         val = (pos_t(i) - pos_t(i+1)) - (Platoon.d_des + Platoon.len);
         e(i) = val;
     end
-end
-function h_gain = calculate_channel_gain(pos_tx, pos_rx)
-    % 1. Configuración de Path Loss (Estándar V2V)
-    alpha = 3;      % Exponente de path loss (3 es típico urbano/autopista)
-    G0 = 1;         % Ganancia de referencia a 1 metro (simplificado)
-    epsilon = 1e-6; % Evitar división por cero
-    
-    % Calcular distancia
-    dist = abs(pos_tx - pos_rx);
-    dist = max(dist, epsilon); % Seguridad numérica
-    
-    % 2. Path Loss (Large Scale)
-    % La potencia decae con la distancia
-    path_loss = G0 * (dist .^ (-alpha));
-    
-    % 3. Rayleigh Fading (Small Scale)
-    % Generamos un número complejo: Parte Real + Parte Imag
-    % randn genera distribución Normal(0,1)
-    h_small = (randn(1,1) + 1i * randn(1,1)) / sqrt(2);
-    
-    % La magnitud al cuadrado sigue una distribución Exponencial
-    rayleigh_gain = abs(h_small)^2;
-    
-    % 4. Ganancia Total de Canal (Potencia)
-    h_gain = path_loss * rayleigh_gain;
 end
