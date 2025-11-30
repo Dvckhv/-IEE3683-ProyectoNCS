@@ -89,8 +89,8 @@ Si $|e_{i,p}^t| > e_{\text{th}}$, el vehículo solicita recursos. La frecuencia 
 
 Se analizan dos formulaciones para el diseño del controlador predictivo.
 
-\subsection{Modelo A — Cinemático (Baseline \cite{He2023})}
-Este modelo asume que el sistema de control vehicular puede imponer una aceleración objetivo instantáneamente.
+\subsection{Cinemático}
+Este modelo asume que el sistema de control vehicular puede imponer una aceleración objetivo instantáneamente como el utilizado en el \textit{Baseline}\cite{He2023}.
 \begin{align}
 v_{i}^{t+1} &= v_{i}^{t} + u_{i}^{t}\Delta t,\\
 p_{i}^{t+1} &= p_{i}^{t} + v_i^t\Delta t + \frac{1}{2}u_i^t(\Delta t)^2.
@@ -99,8 +99,8 @@ Aquí, la entrada de control es $u_i^t \equiv a_i^t$. Las restricciones son simp
 
 \textit{Crítica:} Este modelo permite cambios de aceleración tipo escalón (step), lo que implica un \textit{jerk} infinito teórico y fuerzas instantáneas imposibles de generar por un motor real.
 
-\subsection{Modelo B — Dinámico Propuesto (Limitado por Jerk)}
-Para capturar la inercia y el confort, se introduce la fuerza longitudinal $F_i$ como variable de estado.
+\subsection{Dinámico Propuesto }
+Para capturar la inercia y el confort, se introduce la fuerza longitudinal $F_i$ como variable de estado, con lo que se limita el \textit{jerk}.
 \begin{align}
 F_{i}^{t+1} &= F_i^t + u_i^t \Delta t, \\
 a_i^{t+1} &= F_i^{t+1}/m,\\
@@ -124,7 +124,7 @@ Cada vehículo resuelve un problema de optimización local en cada paso de tiemp
 \min_{u_i^t} (e_{i,est}^{t+1})^T W (e_{i,est}^{t+1})
 \end{equation}
 
-Para el **Modelo A**, la proyección es cuadrática estándar. Para el **Modelo B**, derivamos una nueva relación de predicción. El error futuro $e(t+1)$ depende cúbicamente del tiempo respecto a la entrada de control $u$ (jerk):
+Para el \textbf{Modelo A}, la proyección es cuadrática estándar. Para el \textbf{Modelo B}, derivamos una nueva relación de predicción. El error futuro $e(t+1)$ depende cúbicamente del tiempo respecto a la entrada de control $u$ (jerk):
 \[
 e_{p}^{t+1} \approx e_p^t + e_v^t \Delta t + \frac{1}{2}a^t \Delta t^2 + \frac{\Delta t^3}{6m}u_i^t.
 \]
@@ -141,6 +141,78 @@ La matriz $\mathbf{A}$ que relaciona la entrada $u$ con el estado futuro $[p, v,
 \]
 Esto penaliza implícitamente los cambios rápidos, actuando como un filtro paso bajo mecánico.
 
+\section{Método de Asignación de Recursos}
+El problema de optimización global se desacopla en dos etapas secuenciales para reducir la complejidad computacional: agendamiento de usuarios (dominio del tiempo) y asignación de potencia (dominio de la potencia) \cite{He2023}. Además, se incorpora un estimador de estado para manejar los instantes sin comunicación.
+
+\subsection{Etapa 1: Agendamiento de Usuarios (User Scheduling)}
+El objetivo es determinar la distribución temporal exacta de los slots para minimizar el intervalo de actualización. Primero, se determina la frecuencia de comunicación requerida $f_i$ según la magnitud del error de espaciamiento. Luego, se calcula el intervalo promedio de slots $c_i$ entre dos transmisiones consecutivas para el vehículo $i$:
+\begin{equation}
+    c_i = \begin{cases} 
+    0 & \text{si } |e_{i,p}| \le e_{th} \\
+    \max\left(1, \left\lfloor \frac{T}{f_i} \right\rfloor\right) & \text{si } |e_{i,p}| > e_{th}
+    \end{cases}
+\end{equation}
+
+El algoritmo intenta asignar el slot ideal $t_{ideal} = t_{last} + c_i$. Si este slot ya está ocupado por el máximo de usuarios ($O_{max}$), se emplea un algoritmo de búsqueda en forma de ``Z'' para encontrar el candidato disponible más cercano :
+\begin{equation}
+    \mathcal{C}_{search} = \{t_{ideal}-1, t_{ideal}+1, t_{ideal}-2, t_{ideal}+2, \dots\}
+\end{equation}
+Este mecanismo prioriza la periodicidad necesaria para garantizar la frescura de la información (VoI) mientras gestiona la congestión del canal.
+
+El procedimiento detallado para determinar los slots de transmisión se describe formalmente en el Algoritmo \ref{alg:user_scheduling}, el cual prioriza a los vehículos con mayor error para asignarles una frecuencia $f_i$ adecuada.
+\begin{algorithm}[!t] 
+\caption{User Scheduling (Agendamiento de Usuarios)}
+\label{alg:user_scheduling}
+\begin{algorithmic}[1]
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+\REQUIRE Spacing error $|e_{i,p}|$, error bound $e^{th}$, last scheduled time slot $t_{l}$, length of scheduling period $T$.
+\ENSURE User scheduling scheme $O_{i}$.
+\STATE \textbf{procedure} USER SCHEDULING OF MV $i$ IN A SCHEDULING PERIOD
+\STATE Initialize user scheduling scheme $O_{i} = 0$.
+\IF {$|e_{i,p}| \le e^{th}$}
+    \STATE Break.
+\ELSE
+    \STATE Initialize allocated number $a = 0$, next desired time slot $t_{n} = 1$, $f_{i}$ according to Eq. (10), $c_{i} = \frac{T}{f_{i}}$.
+    \IF {$(t_{l} + c_{i}) \mod T > T$}
+        \STATE $t_{n} = (t_{l} + c_{i}) \mod T$.
+    \ENDIF
+    \WHILE {$a \le f_{i}$ or $t_{n} \le T$}
+        \IF {$t_{n}$ can be scheduled}
+            \STATE $o_{i}^{t_{n}} = 1$.
+            \STATE $a = a + 1$.
+            \STATE $t_{n} = t_{n} + c_{i}$.
+        \ELSE
+            \STATE Initialize candidate time slot array $C$ (Z-search).
+            \STATE Update $t_{n}$ as the first available time slot in $C$.
+        \ENDIF
+    \ENDWHILE
+\ENDIF
+\STATE \textbf{end procedure}
+\end{algorithmic}
+\end{algorithm}
+\subsection{Etapa 2: Asignación de Potencia NOMA}
+Una vez fijados los usuarios por slot, se resuelve la asignación de potencia. A diferencia de los sistemas celulares convencionales, se aplica el \textbf{Teorema 1} de \cite{He2023}: \textit{el orden óptimo de decodificación SIC es el orden ascendente de la ganancia del canal de interferencia}.
+
+Para un par de usuarios $j$ y $k$ que comparten un slot, donde el usuario $j$ sufre menos interferencia ($h_{j, k-1} > h_{j-1, k}$) y es decodificado primero, las potencias se calculan de manera ``voraz'' (greedy) para satisfacer estrictamente el umbral $R^{th}$ de tasa mínima:
+\begin{align}
+    p_j &= \frac{R^{th} N_0}{h_{j, j-1}} \\
+    p_k &= \frac{R^{th}(N_0 + p_j h_{k, j-1})}{h_{k, k-1}}
+\end{align}
+Donde $h_{k, j-1}$ es la ganancia de interferencia desde el transmisor de $j$ hacia el receptor de $k$. Si la suma $p_j + p_k > P_{max}$, se declara un \textit{outage} y no se realiza la transmisión.
+
+\subsection{Mecanismo de Estimación de Estado}
+Dado que el agendamiento no es continuo, el sistema requiere un estimador para los instantes $t$ donde no hay recepción de paquetes. Siguiendo a \cite{He2023}, el vehículo $i$ estima el estado de su predecesor $i-1$ basándose en la última información recibida en $t' < t$, asumiendo persistencia del input de control $u_{i-1}(t')$:
+\begin{align}
+    v_{est}^{t} &= v(t') + u(t')(t - t')\Delta t \\
+    p_{est}^{t} &= p(t') + v(t')(t - t')\Delta t + \frac{1}{2}u(t')((t - t')\Delta t)^2
+\end{align}
+Estas estimaciones alimentan al controlador QP, permitiendo mantener la estabilidad de la cuerda incluso bajo la intermitencia inherente al protocolo de asignación de recursos.
+---------------------------------
+
+HASTA ACA CREO QUE ESTA BIEN
+
+----------------------------------
 \section{Simulaciones y Resultados}
 
 \subsection{Configuración del Experimento}
@@ -151,10 +223,18 @@ Se simula un pelotón de $N=12$ vehículos en MATLAB.
 \item Escenario: El líder ejecuta un perfil de velocidad variable (frenado de 20 a 15 m/s y posterior recuperación), introduciendo una perturbación que se propaga hacia atrás.
 \end{itemize}
 
+% Placeholder para Figuras (Debes tener los archivos .png o .eps)
+\begin{figure}[!t]
+\centering
+% \includegraphics[width=3in]{fig_velocidades}
+\caption{Comparación de perfiles de velocidad. El Modelo A (Cinemático) muestra cambios bruscos irreales. El Modelo B (Dinámico) muestra transiciones suaves.}
+\label{fig:vel}
+\end{figure}
+
 \subsection{Análisis Comparativo}
 
 \subsubsection{Perfiles de Movimiento}
-El modelo cinemático (A) utiliza la aceleración máxima permitida de forma inmediata, generando perfiles de velocidad con "codos" agudos. Si bien esto minimiza el error matemático rápidamente, requiere una respuesta de motor instantánea inexistente.
+El modelo cinemático (A) utiliza la aceleración máxima permitida de forma inmediata, generando perfiles de velocidad con ``codo'' agudos. Si bien esto minimiza el error matemático rápidamente, requiere una respuesta de motor instantánea inexistente.
 El modelo dinámico (B) produce curvas de velocidad sigmoidales (suaves). El \textit{jerk} se mantiene acotado, lo que resulta en una experiencia de conducción confortable y segura para la carga o pasajeros.
 
 \subsubsection{Estabilidad y Error}
