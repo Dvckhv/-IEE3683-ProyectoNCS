@@ -68,15 +68,15 @@ El presente trabajo replica fielmente el algoritmo NOMA-V2V planteado en \cite{H
 \section{Marco General del Sistema}
 
 \subsection{Arquitectura de Comunicación NOMA-V2V}
-El sistema utiliza comunicación V2V entre cada vehículo y su predecesor en un esquema TDMA. Siguiendo a \cite{He2023}, Solo  $O_{\max}=2$ vehículos pueden transmitir en el mismo \textit{timeslot} utilizando NOMA de dominio de potencia.
+El sistema utiliza comunicación V2V unicast en un esquema TDMA. Siguiendo a \cite{He2023}, hasta $O_{\max}=2$ vehículos pueden transmitir en el mismo \textit{timeslot} utilizando NOMA de dominio de potencia.
 
-El receptor aplica Cancelación Sucesiva de Interferencia (SIC). Para ello, se utiliza el \textbf{Teorema 1} de \cite{He2023}, el cual demuestra que, almenos para una comunicación entre 2 vehiculos, el orden óptimo de decodificación es el orden ascendente de la ganancia del canal de interferencia. Esto minimiza la potencia total requerida al decodificar primero a los usuarios que sufren mayor interferencia externa.
+El receptor está equipado con capacidad de Cancelación Sucesiva de Interferencia (SIC). Esto permite que un vehículo decodifique primero la señal de interferencia dominante (si esta es lo suficientemente fuerte), la sustraiga de la señal recibida y posteriormente decodifique su propia señal. Esta capacidad es fundamental para permitir la superposición de usuarios sin degradar la fiabilidad del enlace crítico.
 
-La condición de éxito para el vehículo $i$ en el instante $t$ es:
+La condición de éxito para el vehículo $i$ en el instante $t$ depende de la Relación Señal-a-Interferencia-más-Ruido (SINR) post-cancelación:
 \begin{equation}
 \Gamma_i^t=\frac{o_i^t p_i^t h_{i,i-1}^t}{I_i^t+N_0} \ge \Gamma_{\text{th}}
 \end{equation}
-donde $h$ es la ganancia del canal (incluyendo \textit{path loss} y desvanecimiento Rayleigh) y $I$ es la interferencia NOMA intra-slot.
+donde $h$ es la ganancia del canal y $I_i^t$ es la interferencia residual.
 
 \subsection{Agendamiento Basado en Eventos}
 La demanda de comunicación no es estática. Se calcula en función del error de espaciamiento absoluto:
@@ -161,40 +161,47 @@ Este mecanismo prioriza la periodicidad necesaria para garantizar la frescura de
 
 El procedimiento detallado para determinar los slots de transmisión se describe formalmente en el Algoritmo \ref{alg:user_scheduling}, el cual prioriza a los vehículos con mayor error para asignarles una frecuencia $f_i$ adecuada.
 \begin{algorithm}[!t] 
-\caption{User Scheduling (Agendamiento de Usuarios)}
+\caption{Agendamiento de Usuarios (User Scheduling)}
 \label{alg:user_scheduling}
 \begin{algorithmic}[1]
-\renewcommand{\algorithmicrequire}{\textbf{Input:}}
-\renewcommand{\algorithmicensure}{\textbf{Output:}}
-\REQUIRE Spacing error $|e_{i,p}|$, error bound $e^{th}$, last scheduled time slot $t_{l}$, length of scheduling period $T$.
-\ENSURE User scheduling scheme $O_{i}$.
-\STATE \textbf{procedure} USER SCHEDULING OF MV $i$ IN A SCHEDULING PERIOD
-\STATE Initialize user scheduling scheme $O_{i} = 0$.
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Salida:}}
+
+\REQUIRE Error de espaciamiento $|e_{i,p}|$, umbral de error $e^{th}$, último slot agendado $t_{l}$, longitud del periodo de agendamiento $T$.
+\ENSURE Esquema de agendamiento del usuario $O_{i}$.
+
+\STATE \textbf{procedimiento} AGENDAMIENTO DEL MV $i$ EN UN PERIODO
+\STATE Inicializar esquema de agendamiento $O_{i} = 0$.
 \IF {$|e_{i,p}| \le e^{th}$}
-    \STATE Break.
+    \STATE Terminar.
 \ELSE
-    \STATE Initialize allocated number $a = 0$, next desired time slot $t_{n} = 1$, $f_{i}$ according to Eq. (10), $c_{i} = \frac{T}{f_{i}}$.
+    \STATE Inicializar número asignado $a = 0$, siguiente slot deseado $t_{n} = 1$, $f_{i}$ según Ec. (10), $c_{i} = \frac{T}{f_{i}}$.
     \IF {$(t_{l} + c_{i}) \mod T > T$}
         \STATE $t_{n} = (t_{l} + c_{i}) \mod T$.
     \ENDIF
-    \WHILE {$a \le f_{i}$ or $t_{n} \le T$}
-        \IF {$t_{n}$ can be scheduled}
+    \WHILE {$a \le f_{i}$ o $t_{n} \le T$}
+        \IF {$t_{n}$ puede ser agendado}
             \STATE $o_{i}^{t_{n}} = 1$.
             \STATE $a = a + 1$.
             \STATE $t_{n} = t_{n} + c_{i}$.
         \ELSE
-            \STATE Initialize candidate time slot array $C$ (Z-search).
-            \STATE Update $t_{n}$ as the first available time slot in $C$.
+            \STATE Inicializar arreglo de slots candidatos $C$ (búsqueda en Z).
+            \STATE Actualizar $t_{n}$ como el primer slot disponible en $C$.
         \ENDIF
     \ENDWHILE
 \ENDIF
-\STATE \textbf{end procedure}
+\STATE \textbf{fin procedimiento}
 \end{algorithmic}
 \end{algorithm}
-\subsection{Etapa 2: Asignación de Potencia NOMA}
-Una vez fijados los usuarios por slot, se resuelve la asignación de potencia. A diferencia de los sistemas celulares convencionales, se aplica el \textbf{Teorema 1} de \cite{He2023}: \textit{el orden óptimo de decodificación SIC es el orden ascendente de la ganancia del canal de interferencia}.
+\\subsection{Etapa 2: Asignación de Potencia NOMA}
+Una vez definidos los usuarios que comparten un slot, se deben determinar sus potencias. Para ello, se aplica el \textbf{Teorema 1} demostrado en \cite{He2023}:
 
-Para un par de usuarios $j$ y $k$ que comparten un slot, donde el usuario $j$ sufre menos interferencia ($h_{j, k-1} > h_{j-1, k}$) y es decodificado primero, las potencias se calculan de manera ``voraz'' (greedy) para satisfacer estrictamente el umbral $R^{th}$ de tasa mínima:
+\begin{quote}
+\textit{En un sistema V2V, el orden óptimo de decodificación SIC que minimiza el consumo total de potencia es el orden ascendente de la ganancia del canal de interferencia.}
+\end{quote}
+
+Esto implica que el usuario que sufre la interferencia más fuerte (desde el transmisor del otro par) debe ser decodificado primero. Para un par de usuarios $j$ y $k$, si $h_{j, k-1} < h_{k, j-1}$, el usuario $k$ decodifica primero a $j$. Las potencias se calculan de manera ``voraz'' para satisfacer estrictamente el umbral $R^{th}$:
+
 \begin{align}
     p_j &= \frac{R^{th} N_0}{h_{j, j-1}} \\
     p_k &= \frac{R^{th}(N_0 + p_j h_{k, j-1})}{h_{k, k-1}}
