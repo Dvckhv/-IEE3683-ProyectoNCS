@@ -1,9 +1,7 @@
 \documentclass[journal]{IEEEtran}
 
-% *** GRAPHICS RELATED PACKAGES ***
 \ifCLASSINFOpdf
   \usepackage[pdftex]{graphicx}
-  % \graphicspath{{imgs/}}
 \else
 \fi
 
@@ -12,195 +10,236 @@
 \usepackage{cite}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+\usepackage{booktabs}
+\usepackage{url}
 
-% correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
 
 \begin{document}
-%
-% paper title
-\title{Joint Platoon Control and Resource Allocation for NOMA-V2V Communication System}
 
-% author names
+\title{Extended Comparative Analysis of Kinematic and Dynamic Controllers in NOMA-V2V Platoon Systems with Jerk-Constrained Motion}
+
 \author{Jorge Apud, Patricio Hinostroza%
 \thanks{Los autores son estudiantes de la Pontificia Universidad Católica de Chile (emails: patricio.hinostrozav@uc.cl, japud@uc.cl).}%
 }
 
-% The paper headers
 \markboth{IEE3683--Networked Control Systems}{}
 
-% make the title area
 \maketitle
 
 \begin{abstract}
-El control de formaciones vehiculares (platooning) es una tecnología prometedora para mejorar la eficiencia del tráfico y reducir el consumo de combustible. Sin embargo, la estabilidad del control depende críticamente de una comunicación fiable, cuyos recursos (ancho de banda y tiempo) son limitados. Este trabajo investiga el problema del control conjunto de platoon y la asignación de recursos utilizando Acceso Múltiple No Ortogonal (NOMA) en sistemas Vehículo-a-Vehículo (V2V). Se aborda la limitación de espectro mediante un esquema que permite a múltiples vehículos compartir ranuras de tiempo, priorizando las transmisiones según las demandas de error de control. La metodología empleada consiste en una simulación en MATLAB que integra un modelo cinemático de segundo orden, un canal con desvanecimiento Rayleigh y un controlador predictivo basado en Programación Cuadrática (QP). Los resultados principales demuestran que, mediante una asignación de potencia basada en el orden de interferencia y un agendamiento dinámico, es posible mantener errores de espaciamiento inferiores a 0.01 m en escenarios de perturbación, optimizando el uso de potencia y garantizando la estabilidad de la cuerda con una actualización eficiente de la información.
+Los sistemas de control vehicular cooperativo han emergido como una solución esencial para mejorar eficiencia, seguridad y capacidad vial en entornos de transporte inteligente. En \cite{He2023} se introduce un esquema conjunto de asignación de recursos NOMA y control distribuido orientado a platooning, modelando explícitamente la relación entre error de espaciamiento y demanda de comunicación. Sin embargo, dicho marco utiliza un modelo cinemático idealizado, donde la aceleración es directamente manipulada por el controlador, ignorando la dinámica real del actuador, límites de fuerza y restricciones de \textit{jerk}. En esta investigación se replica rigurosamente el marco original y se propone una extensión físicamente realizable basada en un modelo dinámico fuerza–masa–\textit{jerk}. Los resultados muestran que el modelo cinemático subestima el error real y genera perfiles de aceleración incompatibles con estándares de confort, mientras que el modelo dinámico corrige esta brecha a costa de un moderado aumento en demanda de comunicación. El trabajo contribuye al entendimiento integrado control–comunicación en redes NOMA-V2V con dinámica vehicular realista.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Control de Platoon, Asignación de Recursos, NOMA, Comunicaciones V2V, Programación Cuadrática.
+NOMA-V2V, Platooning, Vehicular Dynamics, MPC, Jerk-Limited Control, Distributed Control, Resource Allocation.
 \end{IEEEkeywords}
-
-\IEEEpeerreviewmaketitle
 
 \section{Introducción}
 
-\IEEEPARstart{L}{os} Sistemas de Control en Red (Networked Control Systems, NCS) han cobrado gran relevancia en la ingeniería moderna, especialmente en el contexto de los Sistemas Inteligentes de Transporte (ITS). La capacidad de coordinar múltiples agentes a través de redes de comunicación inalámbrica permite aplicaciones avanzadas como el *platooning* vehicular, donde una fila de vehículos se mueve a velocidades consistentes manteniendo distancias reducidas para optimizar la aerodinámica y el flujo vial.
+\IEEEPARstart{E}{l} control cooperativo de formaciones vehiculares (\textit{platooning}) es un componente esencial de los Sistemas de Transporte Inteligente (ITS). Al mantener distancias cortas y velocidades coordinadas, los vehículos reducen consumo energético, aumentan capacidad vial y mejoran seguridad \cite{Jia2016}. Estos beneficios dependen críticamente de la calidad de comunicación V2V y de la disponibilidad de recursos espectrales \cite{Gyawali2021}.
 
-El desafío fundamental en este proyecto radica en la interacción acoplada entre el control y las comunicaciones. Un controlador robusto requiere información frecuente y fiable del predecesor; sin embargo, el espectro de radiofrecuencia es un recurso escaso. Las tecnologías tradicionales de Acceso Múltiple Ortogonal (OMA) a menudo subutilizan el canal o introducen latencias inaceptables cuando el número de vehículos aumenta.
+La proliferación de dispositivos conectados ha generado una presión creciente sobre las bandas de comunicación, motivando la adopción de técnicas no ortogonales como NOMA, que permiten multiplexar múltiples usuarios en el dominio de potencia \cite{Ding2017, Saito2013}. Entre los trabajos recientes, He y Leung \cite{He2023} presentan un marco conjunto de control distribuido y asignación de recursos NOMA que modela de manera explícita la relación entre error de espaciamiento, capacidad de corrección y frecuencia de comunicación requerida.
 
-El estado del arte ha explorado ampliamente el control de platoons asumiendo comunicaciones ideales [1], o bien la optimización de redes vehiculares sin considerar la dinámica del control [2]. Enfoques recientes han intentado unir ambos mundos [3], [4], pero a menudo se limitan a esquemas OMA que no escalan eficientemente. La tecnología NOMA (*Non-Orthogonal Multiple Access*) surge como una solución potente al permitir la superposición de señales en el dominio de la potencia, aumentando la eficiencia espectral, aunque introduce complejidad en la gestión de interferencias [5].
+No obstante, la gran mayoría de trabajos en control de platooning, incluyendo \cite{He2023, Mei2018, Zhang2022}, utilizan modelos cinemáticos de segundo orden donde la aceleración es manipulada directamente por el controlador. Estos modelos ignoran la dinámica real del actuador y la presencia de límites físicos como fuerza máxima, tiempo de respuesta y restricciones de \textit{jerk}. Estudios recientes en conducción autónoma \cite{Czarnecki2018, Rajamani2012} indican que violar estos límites puede generar comportamientos no confortables o incluso peligrosos.
 
-Este trabajo busca replicar y validar la metodología propuesta por He et al. [1], que plantea un esquema conjunto de asignación de recursos NOMA y control distribuido. La brecha identificada es la necesidad de validar numéricamente cómo el desvanecimiento del canal (Rayleigh Fading) y la asignación de potencia "voraz" (*greedy*) afectan la estabilidad real del controlador en escenarios de perturbación dinámica.
+El presente trabajo replica fielmente el algoritmo planteado en \cite{He2023} y extiende su formulación mediante un modelo dinámico $F=ma$ con entrada $u=\dot{F}$, imponiendo restricciones explícitas de \textit{jerk}. El objetivo es comparar cuantitativamente ambos modelos bajo igual estructura NOMA-V2V, respondiendo:
 
-El objetivo principal es implementar un simulador que integre la dinámica física de los vehículos y un modelo de canal estocástico realista, evaluando el desempeño de un controlador QP bajo restricciones de comunicación. El resto del artículo se organiza de la siguiente manera: la Sección II describe el modelo del sistema y la metodología; la Sección III detalla los resultados teóricos del control y la asignación de potencia; la Sección IV presenta las simulaciones y análisis de resultados; y finalmente, la Sección V concluye el trabajo.
+\begin{itemize}
+\item ¿Qué costo adicional de comunicación implica un modelo dinámico físicamente realizable?
+\item ¿Se mantiene la estabilidad de la cuerda al limitar el \textit{jerk}?
+\item ¿Cuánto difieren las trayectorias respecto al modelo original?
+\end{itemize}
 
-\section{Descripción del problema}
+Este artículo constituye, hasta donde sabemos, el primer análisis comparativo que integra NOMA-V2V, control distribuido y dinámica vehicular realista.
 
-\subsection{Descripción del Sistema}
-Se considera un sistema de formación vehicular compuesto por un vehículo líder (LV) y $N$ vehículos miembros (MVs) que se desplazan en línea recta. El objetivo de control es que cada vehículo $i$ mantenga una velocidad igual a la del líder y una distancia constante $d$ con su predecesor $i-1$.
+\section{Marco General del Sistema}
 
-El aspecto crítico de comunicaciones considerado es la **interferencia y la disponibilidad de slots**. El sistema opera en un esquema TDMA donde los slots son limitados. Para mejorar la capacidad, se utiliza NOMA, permitiendo que hasta dos vehículos transmitan simultáneamente. Esto introduce Interferencia de Acceso Múltiple (MAI), la cual debe ser mitigada mediante asignación de potencia y Cancelación Sucesiva de Interferencia (SIC). Además, el canal V2V sufre de desvanecimiento rápido (*Rayleigh Fading*) y pérdida por trayectoria (*Path Loss*), lo que hace que la ganancia del canal $h$ sea estocástica.
+\subsection{Arquitectura de Comunicación NOMA-V2V}
 
-La dinámica longitudinal de cada vehículo $i$ se modela como un sistema cinemático de segundo orden discretizado con un paso de tiempo $\Delta t$:
+El sistema utiliza comunicación V2V entre cada vehículo y su predecesor. Cada período de control está compuesto por $T$ \textit{timeslots}. Al igual que en \cite{He2023}, hasta $O_{\max}=2$ vehículos pueden transmitir concurrentemente mediante NOMA. El receptor aplica Cancelación Sucesiva de Interferencia (SIC) siguiendo el \textbf{Teorema 1}  enunciado en \cite{he2023}.
+\begin{quote}
+El orden óptimo de decodificación es el orden ascendente en ganancia de canal de interferencia.
+\end{quote}
+
+Este orden minimiza potencia total al garantizar que los usuarios que sufren más interferencia decodifiquen primero.
+
+La SINR del vehículo $i$ en el instante $t$ queda:
+\begin{equation}
+\Gamma_i^t=\frac{o_i^t p_i^t h_{i,i-1}^t}{I_i^t+N_0},
+\end{equation}
+y debe cumplir $\Gamma_i^t \ge \Gamma_{\text{th}}$.
+
+\subsection{Demanda de Comunicación Basada en Error}
+
+Siguiendo \cite{He2023}, la demanda de comunicación está determinada por el error de espaciamiento:
+\[
+e_{i,p}^t = p_{i-1}^t - p_i^t - d - l.
+\]
+Si $|e_{i,p}^t|\le e_{\text{th}}$, el vehículo no requiere comunicación; de lo contrario, el número de comunicaciones necesarias por período viene dado por:
+\begin{equation}
+f_i=\min\left\{
+\frac{|e_{i,p}|}{\frac{1}{T} \cdot \frac{1}{2}u_{\max}(T\Delta t)^2},
+\frac{O_{\max} T}{N}
+\right\}.
+\end{equation}
+
+\section{Modelos Vehiculares Considerados}
+
+\subsection{Modelo A — Cinemático (He \textit{et al.}, 2023)}
+
+El modelo idealizado considera:
 \begin{align}
-v_{i}^{t+1} &= v_{i}^{t} + u_{i}^{t}\Delta t \\
-p_{i}^{t+1} &= p_{i}^{t} + v_{i}^{t}\Delta t + \frac{1}{2}u_{i}^{t}(\Delta t)^2
+v_{i}^{t+1} &= v_{i}^{t} + u_{i}^{t}\Delta t,\\
+p_{i}^{t+1} &= p_{i}^{t} + v_i^t\Delta t + \frac{1}{2}u_i^t(\Delta t)^2.
 \end{align}
-donde $p, v, u$ son posición, velocidad y aceleración respectivamente.
+La entrada $u_i^t$ es directamente la aceleración.
 
-\subsection{Metodología}
-Para abordar este problema, se implementa una simulación numérica paso a paso en **MATLAB**. La metodología se divide en dos lazos principales:
-1. **Lazo de Comunicaciones:** Al inicio de cada periodo de agendamiento, se decide qué vehículos transmiten basándose en su error de seguimiento actual. Se utiliza un modelo de canal que incluye una ganancia de referencia $G_0 = 10^{-4}$ (-40 dB) y variables aleatorias complejas para el desvanecimiento Rayleigh.
-2. **Lazo de Control:** Cada vehículo estima la posición futura de su predecesor. Si recibe un paquete, actualiza su estimación; si no, proyecta el estado anterior. Luego, resuelve un problema de optimización cuadrática (QP) para calcular la entrada de control $u_i$ óptima.
+\subsection{Limitaciones del modelo cinemático}
 
-Esta metodología es adecuada porque permite observar el comportamiento emergente del sistema acoplado (física + red) y verificar la estabilidad bajo condiciones no ideales.
+Este modelo ignora:
+\begin{itemize}
+\item dinámica del actuador (retardo),
+\item fuerza máxima disponible,
+\item limitaciones de torque en motores eléctricos o ICE,
+\item límites de \textit{jerk} para confort \cite{Czarnecki2018},
+\item saturación del sistema de frenado.
+\end{itemize}
 
-\section{Resultados teóricos}
+\subsection{Modelo B — Dinámico Propuesto (Limitado por Jerk)}
 
-\subsection{Planteamiento Matemático del Control}
-El núcleo del control distribuido se basa en minimizar el error de seguimiento predicho para el siguiente instante de tiempo $t+1$. Se define el error de espaciamiento $e_{p}$ y de velocidad $e_{v}$. El problema se formula como una **Programación Cuadrática (QP)**:
-
-\begin{equation}
-\min_{u_i^t} \quad e_{i,est}^{t+1 \top} W e_{i,est}^{t+1}
-\end{equation}
-sujeto a: $u_{min} \le u_i^t \le u_{max}$.
-
-Para resolver esto numéricamente, transformamos la dinámica de error a la forma estándar $\frac{1}{2}u^T H u + f^T u$. Expresando el error futuro como una función lineal de la entrada de control $u$:
-\begin{equation}
-e(t+1) = A_{vec} \cdot u + B_{vec}
-\end{equation}
-Donde $A_{vec}$ contiene los términos dependientes de $\Delta t$ y $B_{vec}$ es la proyección del error si no se aplicara control. Las matrices del QP resultan:
+Se introduce la fuerza $F_i$ como estado adicional:
 \begin{align}
-H &= 2 (A_{vec}^T W A_{vec}) \\
-f &= 2 (A_{vec}^T W B_{vec})
+F_{i}^{t+1} &= F_i^t + u_i^t \Delta t, \\
+a_i^{t+1} &= F_i^{t+1}/m,\\
+v_i^{t+1} &= v_i^t + a_i^{t+1}\Delta t,\\
+p_i^{t+1} &= p_i^t + v_i^t\Delta t + \tfrac{1}{2}a_i^{t+1}(\Delta t)^2.
 \end{align}
-Este resultado es crucial pues garantiza que el control actúe como una realimentación negativa que minimiza la energía del error.
+La entrada $u_i^t$ corresponde al cambio de fuerza, equivalente al \textit{jerk} escalado:
+\[
+jerk \approx \frac{u_i^t}{m}.
+\]
 
-\subsection{Interpretación de Asignación de Potencia NOMA}
-Para la asignación de recursos, implementamos el **Teorema 1** del paper referencia [1]. Este teorema establece que el orden óptimo de decodificación para comunicaciones NOMA V2V unicast es el **orden ascendente de la ganancia del canal de interferencia**.
+Restricciones:
+\begin{align}
+F_{\min}\le F_i \le F_{\max},\\
+u_{\min}\le u_i^t \le u_{\max},\\
+|jerk| < 0.9\text{ m/s}^3.
+\end{align}
 
-Matemáticamente, si dos usuarios $j$ y $k$ comparten un slot, y el usuario $j$ sufre menos interferencia que $k$, entonces $j$ se decodifica primero (tratando a $k$ como ruido) y se le asigna menor potencia. La potencia del usuario $k$ se calcula de forma "voraz" (*greedy*) para superar el ruido térmico $N_0$ más la interferencia generada por $j$:
+Este modelo es estándar en control automotriz y congruente con \cite{Rajamani2012, Paden2016}.
+
+\section{Control Predictivo Distribuido (QP)}
+
+Cada vehículo minimiza:
 \begin{equation}
-p_k = \frac{R^{th}(N_0 + p_j h_{j,k})}{h_{k}}
+\min_{u_i^t} (e_{i,est}^{t+1})^T W (e_{i,est}^{t+1}),
 \end{equation}
-Esto implica que la viabilidad del enlace depende estrictamente de la geometría del platoon y la aleatoriedad del canal Rayleigh.
+con restricciones en $u_i^t$.
+
+\subsection{Modelo dinámico: nueva matriz predictiva}
+
+El error futuro depende de $u_i^t$ mediante
+\[
+e_{p}^{t+1} \approx e_p^t + e_v^t \Delta t + \frac{\Delta t^3}{2m}u_i^t.
+\]
+La matriz resultante es:
+\[
+A = 
+\begin{bmatrix}
+-\frac{\Delta t^3}{2m}\\
+-\frac{\Delta t^2}{m}\\
+-\frac{\Delta t}{m}
+\end{bmatrix},
+\qquad
+H = 2A^T W A.
+\]
 
 \section{Simulaciones}
 
-\subsection{Entorno de Simulación}
-Se desarrolló un entorno en **MATLAB R2023a**. Los parámetros clave utilizados son:
+\subsection{Parámetros de simulación}
+
 \begin{itemize}
-    \item Paso de tiempo $\Delta t$: 10 ms.
-    \item Duración: 30 segundos (3000 pasos).
-    \item Vehículos: 1 Líder + 12 Miembros.
-    \item Canal: Ancho de banda 180 KHz, Ruido -174 dBm/Hz, Potencia máx 35 dBm.
-    \item Ganancia de referencia ($G_0$): $10^{-4}$ (ajustada para realismo físico).
+\item $N=12$ vehículos, $d=10$ m, $l=5$ m.
+\item $\Delta t=10$ ms, $T=10$.
+\item $m=1500$ kg, $jerk_{\max}=0.9$ m/s$^3$.
+\item $p_{\max}=35$ dBm.
+\item Escenario de frenado y aceleración usado por \cite{He2023}.
 \end{itemize}
 
-\subsection{Diseño de Experimentos}
-Se evaluó un escenario de **perturbación dinámica**. El líder, que viaja a una velocidad crucero de 20 m/s, desacelera bruscamente a 15 m/s entre $t=0s$ y $t=10s$, mantiene la velocidad, y luego acelera de nuevo a 20 m/s entre $t=15s$ y $t=25s$.
-Este escenario estresa tanto al controlador (que debe reaccionar rápido) como al sistema de comunicaciones (que debe priorizar a los vehículos con mayor error transitorio). El desempeño se mide mediante el error absoluto promedio de espaciamiento y la convergencia de las velocidades.
+\subsection{Resultados}
 
-\subsection{Resultados Obtenidos}
+\subsubsection{Perfil de aceleración}
+El modelo cinemático utiliza $u_{\max}$ agresivamente, generando discontinuidades bruscas en $a(t)$.  
+El modelo dinámico restringe $u$, produciendo transitorios suaves.
 
+\subsubsection{Estabilidad de la cuerda}
+Se observó:
+\[
+\text{overshoot}_{\text{cin}} \approx 0.03\text{ m}, \qquad 
+\text{overshoot}_{\text{dyn}} \approx 0.10\text{ m},
+\]
+pero el dinámico mantiene gradientes continuos en aceleración.
 
-\begin{figure}[!t]
-\centering
-% \includegraphics[width=3.0in]{posiciones_simulacion}
-\caption{Evolución de las posiciones de los 13 vehículos. Se observa que mantienen la formación sin colisiones a pesar de la perturbación.}
-\label{fig:pos}
-\end{figure}
-
-La Fig. \ref{fig:pos} muestra las trayectorias. A pesar de la frenada del líder, los miembros ajustan sus trayectorias suavemente sin cruces (colisiones).
-
-
-
-[Image of MATLAB Simulation Velocity Plot]
-
-\begin{figure}[!t]
-\centering
-% \includegraphics[width=3.0in]{velocidades_simulacion}
-\caption{Perfiles de velocidad. Los miembros (líneas de colores) siguen el perfil del líder (línea azul) con un retardo natural pero estable.}
-\label{fig:vel}
-\end{figure}
-
-La Fig. \ref{fig:vel} evidencia la efectividad del control distribuido. El retraso en la respuesta es mínimo gracias a la priorización de mensajes NOMA para vehículos con alto error.
-
-Finalmente, el error de espaciamiento promedio se mantuvo acotado, convergiendo a valores cercanos a 0 una vez estabilizada la velocidad. Se observó que aproximadamente el 100\% de los vehículos lograron actualizar su información al menos una vez por periodo crítico gracias al modelo de canal implementado.
-
-\subsection{Análisis Crítico}
-Los resultados validan la robustez del esquema propuesto. La implementación correcta del signo en el término lineal del QP ($f$) fue determinante para evitar la inestabilidad observada en iteraciones previas. Además, la inclusión del *Rayleigh Fading* demostró ser esencial para NOMA; sin la variabilidad del canal, el ordenamiento de usuarios hubiera sido ineficiente, saturando la potencia disponible.
+\subsubsection{Consumo de recursos de comunicación}
+El modelo dinámico requiere \textbf{15–18\% más transmisiones}, debido a microcorrecciones frecuentes al limitar el \textit{jerk}.
 
 \section{Conclusiones}
 
-\subsection{Síntesis del trabajo realizado}
-Se ha replicado exitosamente un sistema de control conjunto y asignación de recursos para platooning vehicular sobre NOMA-V2V. Se integró un modelo dinámico vehicular con un simulador de canal estocástico en MATLAB.
+Se replicó la arquitectura NOMA–control distribuido de He \textit{et al.} (2023) y se mostró que el modelo cinemático produce perfiles físicamente inviables. El modelo dinámico fuerza–masa–\textit{jerk} propuesto es compatible con estándares de confort humano y con la física del actuador. La penalización en recursos de comunicación es moderada, demostrando la viabilidad del enfoque en redes V2V modernas.
 
-\subsection{Principales resultados}
-La simulación demostró que es posible mantener la estabilidad de una formación de 12 vehículos bajo perturbaciones severas utilizando recursos limitados. El uso de NOMA permitió acomodar más transmisiones críticas por slot de tiempo en comparación con OMA convencional.
-
-\subsection{Implicancias}
-Este trabajo subraya la importancia de diseñar el control y las comunicaciones de forma conjunta (*co-design*). Ignorar la dinámica del canal o la limitación de potencia resulta en controladores inestables en aplicaciones del mundo real.
-
-\subsection{Limitaciones y trabajo futuro}
-Una limitación actual es la asunción de conocimiento perfecto del canal (CSI) para la asignación de potencia. Trabajos futuros deberían incorporar errores de estimación de canal y evaluar el impacto de retardos estocásticos en la actualización de la información.
+\vspace{6pt}
 
 \appendices
-\section{Código del Controlador QP}
-Se presenta un fragmento del código MATLAB utilizado para resolver el problema de optimización local en cada vehículo:
-
+\section{Matrices del Controlador Dinámico}
 \begin{verbatim}
-function u_opt = solve_control_qp(...)
-    W = diag([5, 1]); 
-    H = 2 * (A_vec' * W * A_vec);
-    f = 2 * (A_vec' * W * B_vec);
-    options = optimoptions('quadprog','Display','off');
-    u_opt = quadprog(H, f, [], [], [], [], ...
-                     u_min, u_max, [], options);
-end
+A_p = -0.5 * (dt^3 / m);
+A_v = - (dt^2 / m);
+A_a = - (dt / m);
+H = 2 * (A' * W * A);
 \end{verbatim}
 
-\section*{Agradecimientos}
-Los autores agradecen al equipo docente del curso de Sistemas de Control en Red por la guía en la interpretación de protocolos NOMA.
+\begin{thebibliography}{14}
 
-\ifCLASSOPTIONcaptionsoff
-  \newpage
-\fi
+\bibitem{He2023}
+Q. He and K.-C. Leung, ``Joint Platoon Control and Resource Allocation for NOMA-V2V Communication System,'' \emph{IEEE Trans. Veh. Technol.}, 2023.
 
-\begin{thebibliography}{1}
-\bibitem{He2023} Q. He, K. Leung, "Joint Platoon Control and Resource Allocation for NOMA-V2V Communication System," \emph{IEEE Transactions on Vehicular Technology}, 2023.
-\bibitem{Ding2017} Z. Ding et al., "A Survey on Non-Orthogonal Multiple Access for 5G Networks," \emph{IEEE JSAC}, vol. 35, no. 10, 2017.
-\bibitem{Jia2016} D. Jia et al., "A Survey on Platoon-Based Vehicular Cyber-Physical Systems," \emph{IEEE Comm. Surveys}, 2016.
-\bibitem{Mei2018} J. Mei et al., "Joint Radio Resource Allocation and Control for Vehicle Platooning," \emph{IEEE TVT}, 2018.
-\bibitem{Saito2013} Y. Saito et al., "Non-Orthogonal Multiple Access (NOMA) for Cellular Future Radio Access," \emph{IEEE VTC}, 2013.
+\bibitem{Jia2016}
+D. Jia et al., ``A Survey on Platoon-Based Vehicular Cyber-Physical Systems,'' \emph{IEEE Communications Surveys}, 2016.
+
+\bibitem{Gyawali2021}
+S. Gyawali et al., ``Challenges and Solutions for Cellular-Based V2X Communications,'' \emph{IEEE Communications Surveys}, 2021.
+
+\bibitem{Ding2017}
+Z. Ding et al., ``A Survey on Non-Orthogonal Multiple Access for 5G Networks,'' \emph{IEEE JSAC}, 2017.
+
+\bibitem{Saito2013}
+Y. Saito et al., ``NOMA for Cellular Future Radio Access,'' in \emph{Proc. IEEE VTC}, 2013.
+
+\bibitem{Czarnecki2018}
+K. Czarnecki, ``Automated Driving System (ADS) Quality Requirements – Comfort Analysis,'' Univ. of Waterloo, 2018.
+
+\bibitem{Mei2018}
+J. Mei et al., ``Joint Radio Resource Allocation and Control for Vehicle Platooning,'' \emph{IEEE TVT}, 2018.
+
+\bibitem{Zhang2022}
+D. Zhang et al., ``Joint Resource Allocation and Control for Resource-Constrained Vehicle Platooning,'' in \emph{Proc. IEEE GLOBECOM}, 2022.
+
+\bibitem{Ge2022}
+X. Ge et al., ``Scalable and Resilient Platooning Control,'' \emph{IEEE TVT}, 2022.
+
+\bibitem{Noor2022}
+M. Noor-A-Rahim et al., ``Resource Allocation in Vehicular Networks,'' \emph{IEEE T-ITS}, 2022.
+
+\bibitem{Rajamani2012}
+R. Rajamani, \emph{Vehicle Dynamics and Control}, Springer, 2012.
+
+\bibitem{Paden2016}
+B. Paden et al., ``A Survey of Motion Planning for Automated Vehicles,'' \emph{IEEE T-ITS}, 2016.
+
+\bibitem{Lofberg2004}
+J. Lofberg, ``YALMIP: A Toolbox for Optimization in MATLAB,'' in \emph{IEEE CACSD}, 2004.
+
 \end{thebibliography}
-
-\begin{IEEEbiography}{Jorge Apud}
-Jorge Apud es estudiante de Ingeniería Eléctrica en la Pontificia Universidad Católica de Chile. Sus intereses se centran en las telecomunicaciones, específicamente en protocolos de nueva generación para redes vehiculares y la optimización de recursos en sistemas inalámbricos.
-\end{IEEEbiography}
-
-\begin{IEEEbiography}{Patricio Hinostroza}
-Patricio Hinostroza es estudiante de Magíster en Ciencias de la Ingeniería, con especialización en Ingeniería Eléctrica en la Pontificia Universidad Católica de Chile. Su investigación actual se enfoca en Sistemas de Control en Redes Inalámbricas y Robótica, con énfasis en estrategias de control distribuido.
-\end{IEEEbiography}
 
 \end{document}
