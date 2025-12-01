@@ -28,7 +28,7 @@
 \maketitle
 
 \begin{abstract}
-El \textit{platooning} vehicular cooperativo, apoyado en comunicaciones V2V fiables, es crucial para los Sistemas de Transporte Inteligente modernos. Es por esto que tanto la gestión eficiente de recursos de comunicación,como la asignación NOMA, es vital para mantener la estabilidad del pelotón bajo restricciones de red realistas. Este trabajo analizó el efecto de incorporar un modelo vehicular de tercer orden con limitación explícita de \textit{jerk} dentro de un marco conjunto de control de \textit{platooning} y comunicaciones V2V basado en NOMA.
+El \textit{platooning} vehicular cooperativo, apoyado en comunicaciones V2V fiables, es crucial para los Sistemas de Transporte Inteligente modernos. Es por esto que tanto la gestión eficiente de recursos de comunicación y las recientes arquitecturas NOMA, es vital para mantener la estabilidad del pelotón bajo restricciones de red realistas. Este trabajo analizó el efecto de incorporar un modelo vehicular de tercer orden con limitación explícita de \textit{jerk} dentro de un marco conjunto de control de \textit{platooning} y comunicaciones V2V basado en NOMA.
 Se replicó íntegramente la arquitectura de un modelo cinemático simplificado y se comparó su desempeño frente a un nuevo modelo dinámico bajo idénticas condiciones de red y perturbación del líder.
 Los resultados mostraron que el modelo con \textit{jerk} acotado produjo trayectorias significativamente más suaves en aceleración, velocidad y espaciamiento, reduciendo las oscilaciones transitorias y mejorando la estabilidad en régimen permanente.
 A pesar de su mayor realismo dinámico, el modelo propuesto requirió un menor número de transmisiones y redujo el consumo total de energía en comunicaciones en un 19\% y 25 \% respectivamente, evidenciando que acciones de control más suaves pueden disminuir la demanda sobre el canal. 
@@ -218,11 +218,6 @@ Dado que el agendamiento no es continuo, el sistema requiere un estimador para l
     p_{est}^{t} &= p(t') + v(t')(t - t')\Delta t + \frac{1}{2}u(t')((t - t')\Delta t)^2
 \end{align}
 Estas estimaciones alimentan al controlador QP, permitiendo mantener la estabilidad de la cuerda incluso bajo la intermitencia inherente al protocolo de asignación de recursos.
----------------------------------
-
-HASTA ACA CREO QUE ESTA BIEN
-
-----------------------------------
 \section{Simulaciones y Resultados}
 
 \subsection{Configuración del Experimento}
