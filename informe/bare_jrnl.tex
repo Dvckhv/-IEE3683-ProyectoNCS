@@ -227,29 +227,194 @@ Se simula un pelotón de $N=12$ vehículos en MATLAB.
 \begin{itemize}
 \item Parámetros Físicos: $\Delta t=10$ ms, $m=1500$ kg.
 \item Parámetros de Red: $BW=180$ kHz, $N_0=-174$ dBm/Hz, Potencia máx = 35 dBm.
-\item Escenario: El líder ejecuta un perfil de velocidad variable (frenado de 20 a 15 m/s y posterior recuperación), introduciendo una perturbación que se propaga hacia atrás.
 \end{itemize}
 
-% Placeholder para Figuras (Debes tener los archivos .png o .eps)
-\begin{figure}[!t]
-\centering
-% \includegraphics[width=3in]{fig_velocidades}
-\caption{Comparación de perfiles de velocidad. El Modelo A (Cinemático) muestra cambios bruscos irreales. El Modelo B (Dinámico) muestra transiciones suaves.}
-\label{fig:vel}
-\end{figure}
+\subsubsection{Escenario de prueba y transferencia de la trayectoria del líder}
+
+Para comparar de forma justa el desempeño del modelo cinemático original y del modelo dinámico con \textit{jerk} acotado, se adopta un esquema de testeo en dos etapas. En una primera simulación se ejecuta únicamente el modelo dinámico de tercer orden, utilizando al líder como generador de trayectoria.
+Como la entrada de control del líder ya no es la aceleración longitudinal $u_0(t)$, sino el \textit{jerk}, la perturbación se introduce como un \textit{jerk} constante y negativo durante un intervalo, seguido por un lazo de control PD sencillo sobre la velocidad.
+
+Más precisamente, el líder parte en régimen estacionario a velocidad de crucero $v_{\mathrm{cruise}}$. Durante un breve intervalo inicial se mantiene $j_0(t)=0$ para preservar ese estado. 
+A continuación, en la ventana temporal de perturbación se fija un \textit{jerk} constante $j_0(t)= \frac{j_{\min}}{10}<0$, lo que produce una reducción suave de la fuerza longitudinal y, por ende, una desaceleración progresiva del líder sin saltos bruscos de aceleración. Finalizado este pulso, se cierra un controlador PD en el dominio de la fuerza
+\[
+\dot F_0(t) = K_p\bigl(v_{\mathrm{cruise}} - v_0(t)\bigr) - K_d\,a_0(t),
+\]
+
+Durante esta primera simulación se registra la aceleración longitudinal del líder en cada instante de muestreo, construyendo una secuencia discreta. 
+Al finalizar, dicha secuencia se almacena en un archivo externo que actúa como “tabla de consulta” de la trayectoria del líder.
+
+En una segunda simulación se ejecuta el modelo cinemático de referencia, idéntico al utilizado en el trabajo base, pero forzando al líder a reproducir exactamente el mismo perfil de aceleración generado por el modelo dinámico. 
+En cada paso de simulación se aplica directamente como entrada de control cinemática la aceleración previamente registrada.
+
+Con esta estrategia, ambos modelos son sometidos a una perturbación externa idéntica en términos de aceleración y velocidad del líder, pero cada uno la procesa según su propia dinámica interna. La comparación de errores de espaciamiento, esfuerzo de control y métricas de comunicación se realiza así sobre un escenario común, evitando sesgos asociados a trayectorias del líder distintas y aislando el efecto de pasar de un modelo cinemático ideal a uno dinámico con \textit{jerk} limitado.
+
 
 \subsection{Análisis Comparativo}
 
-\subsubsection{Perfiles de Movimiento}
-El modelo cinemático (A) utiliza la aceleración máxima permitida de forma inmediata, generando perfiles de velocidad con ``codo'' agudos. Si bien esto minimiza el error matemático rápidamente, requiere una respuesta de motor instantánea inexistente.
-El modelo dinámico (B) produce curvas de velocidad sigmoidales (suaves). El \textit{jerk} se mantiene acotado, lo que resulta en una experiencia de conducción confortable y segura para la carga o pasajeros.
 
-\subsubsection{Estabilidad y Error}
-Se observó un sobrepaso (\textit{overshoot}) en el error de espaciamiento mayor en el modelo dinámico ($\approx 0.10$ m) comparado con el cinemático ($\approx 0.03$ m). Esto es una consecuencia física inevitable: la inercia impide corregir el error instantáneamente. Sin embargo, ambos modelos mantienen la estabilidad asintótica, convergiendo a cero error en estado estacionario.
+\subsubsection{Estabilidad y error}
+En la Figura~\ref{fig:new_model_spacing_error} se muestra la evolución del error de
+espaciamiento por vehículo para el modelo dinámico con limitación explícita de
+\textit{jerk}, mientras que las Figuras~\ref{fig:new_model_speeds} y
+\ref{fig:new_model_absolute_error} muestran, respectivamente, la velocidad de los
+vehículos y el error absoluto promedio. La perturbación introducida en la trayectoria del
+líder genera una onda de desaceleración que se propaga hacia la cola del
+\emph{platoon}, pero dicha onda es suave: los errores de espaciamiento presentan
+variaciones continuas y sin esquinas, alcanzan un máximo cercano a $0.5\,\mathrm{m}$ de manera agregada y de $1.2\,\mathrm{m}$ en el peor vehiculo, 
+luego decrecen de forma monótona hasta estabilizarse en un valor estacionario del orden
+de los centímetros. La curva de velocidades es igualmente suave, con perfiles casi
+superpuestos entre vehículos, lo que indica que el controlador local y la dinámica de
+tercer orden permiten que el \emph{platoon} recupere la velocidad de crucero sin
+oscilaciones de alta frecuencia. Finalmente, en la
+Figura~\ref{fig:new_model_packets} se presenta la evolución de los paquetes acumulados
+recibidos correctamente a lo largo del horizonte de simulación.
 
-\subsubsection{Costo en Comunicaciones}
-Una hallazgo clave es el impacto en la red. El modelo dinámico requiere aproximadamente un **15–18\% más de transmisiones** totales.
-\textit{Razón:} El modelo cinemático corrige el error en pocos pasos agresivos y luego entra en reposo (error $< e_{th}$). El modelo dinámico, al suavizar la corrección, tarda más tiempo en reducir el error por debajo del umbral $e_{th}$, manteniendo activa la solicitud de slots de comunicación por más periodos.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/new_model_spacing_error.png}
+    \caption{Evolución del error de espaciamiento por vehículo (modelo dinámico).}
+    \label{fig:new_model_spacing_error}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/new_model_speeds.png}
+    \caption{Evolución de la velocidad por vehículo (modelo dinámico).}
+    \label{fig:new_model_speeds}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/new_model_absolute_error.png}
+    \caption{Evolución del error de espaciamiento absoluto promedio (modelo dinámico).}
+    \label{fig:new_model_absolute_error}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/new_model_packets.png}
+    \caption{Paquetes acumulados recibidos correctamente (modelo dinámico).}
+    \label{fig:new_model_packets}
+\end{figure}
+
+En contraste, las Figuras~\ref{fig:paper_model_spacing_error} y
+\ref{fig:paper_model_speeds} corresponden al modelo cinemático original del
+\emph{paper}. En este caso, los cambios de aceleración son abruptos y se traducen en
+perfiles de velocidad con tramos fuertemente angulados, evidenciando saltos en la
+aceleración aplicada a los vehículos. Los errores de espaciamiento
+(Fig.~\ref{fig:paper_model_spacing_error}) muestran trayectorias más irregulares, con
+componentes positivas y negativas que se estabilizan en un error estacionario mayor, del
+orden de $0.4\,\mathrm{m}$, como se aprecia en la
+Figura~\ref{fig:paper_model_absolute_error}. Además, la propagación de la perturbación es
+menos suave y tiende a dejar diferencias persistentes entre vehículos.
+
+Desde el punto de vista de estabilidad, ambos modelos logran mantener el \emph{platoon}
+cohesionado ante la perturbación, pero el modelo dinámico con \textit{jerk} acotado
+presenta una respuesta claramente más amortiguada: el máximo error de espaciamiento es
+similar o ligeramente menor, el error absoluto promedio decrece más rápido después del
+tránsito de la onda y el estado estacionario presenta menores desalineamientos entre
+vehículos. Al mismo tiempo, la ausencia de esquinas en las trayectorias de velocidad y
+espaciamiento refleja un comportamiento físicamente más realista y confortable para los
+pasajeros.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/paper_model_spacing_error.png}
+    \caption{Evolución del error de espaciamiento por vehículo (modelo cinemático).}
+    \label{fig:paper_model_spacing_error}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/paper_model_speeds.png}
+    \caption{Evolución de la velocidad por vehículo (modelo cinemático).}
+    \label{fig:paper_model_speeds}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/paper_model_absolute_error.png}
+    \caption{Evolución del error de espaciamiento absoluto promedio (modelo cinemático).}
+    \label{fig:paper_model_absolute_error}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/paper_model_packets.png}
+    \caption{Paquetes acumulados recibidos correctamente (modelo cinemático).}
+    \label{fig:paper_model_packets}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{Imagenes/paper_model_route_info}
+    \caption{Evolución del error de espaciamiento, velocidades y error promedio
+    absoluto para el modelo cinemático original.}
+    \label{fig:paper_route_info}
+\end{figure}
+
+
+\subsubsection{Costo en comunicaciones}
+
+Las Figuras~\ref{fig:new_tx_schedule} y~\ref{fig:paper_tx_schedule} muestran el patrón
+de transmisiones para cada seguidor en ambos modelos. En el modelo dinámico propuesto,
+las transmisiones son más regulares en el tiempo: una vez que la perturbación alcanza a
+cada vehículo, éste comienza a transmitir de manera casi periódica a lo largo del
+horizonte. El agendamiento NOMA distribuye las oportunidades de transmisión de forma
+uniforme entre los seguidores, evitando grandes intervalos sin comunicación. Esta
+regularidad es coherente con los perfiles de error más suaves, que requieren ajustes
+graduales de control y, por tanto, una monitorización continua pero moderada del estado
+de los predecesores.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/new_model_transmission_schedule}
+    \caption{Schedule de transmisión por vehículo para el modelo dinámico con
+    \textit{jerk} limitado.}
+    \label{fig:new_tx_schedule}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/paper_model_transmission_schedule}
+    \caption{Schedule de transmisión por vehículo para el modelo cinemático original.}
+    \label{fig:paper_tx_schedule}
+\end{figure}
+
+
+En el modelo cinemático de referencia, en cambio, se observan ráfagas de transmisión
+concentradas en las zonas donde los errores crecen rápidamente, seguidas de intervalos
+prolongados prácticamente sin paquetes. El esquema de agendamiento asigna recursos cuando
+los errores ya son altos, pero luego puede pasar varios segundos sin nuevas
+actualizaciones, lo que contribuye a los cambios abruptos en las acciones de control y a
+un error estacionario mayor. El resultado es un uso de canal menos homogéneo en el
+tiempo, con picos de demanda y periodos ociosos.
+
+La Tabla~\ref{tab:comm_cost} resume las métricas de comunicación agregadas. A pesar de
+mostrar mejor desempeño en términos de estabilidad y error, el modelo dinámico con
+\textit{jerk} limitado utiliza menos recursos de comunicación: el número total de
+paquetes transmitidos se reduce aproximadamente en un $15\%$ (de $3152$ a $2664$), y la
+energía de transmisión integrada disminuye alrededor de un $17\%$ (de
+$8.15\times10^{-6}\,\mathrm{J}$ a $6.79\times10^{-6}\,\mathrm{J}$). Esto indica que el
+modelo propuesto no sólo mejora la calidad de seguimiento, sino que lo hace con un costo
+de comunicaciones menor, lo que resulta especialmente relevante para escenarios V2V con
+recursos espectrales y energéticos limitados.
+
+
+\begin{table}[H]
+    \centering
+    \caption{Métricas agregadas de costo en comunicaciones para ambos modelos.}
+    \label{tab:comm_cost}
+    \begin{tabular}{lcc}
+        \hline
+        \textbf{Modelo} & \textbf{Paquetes acumulados} & \textbf{Energía integrada [J]} \\
+        \hline
+        Cinemático (paper) & $3152$ & $8.15\times10^{-6}$ \\
+        Dinámico con \textit{jerk} limitado & $2664$ & $6.79\times10^{-6}$ \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \section{Conclusiones}
 

@@ -271,6 +271,42 @@ ylabel('Cumulative Energy (J)');
 xlabel('Time (s)');
 grid on;
 
+fprintf("Total power used: %.2e\n", CumulEnergy(end))
+fprintf("Total packets: %.1f\n", CumulComm(end))
+
+%% Indepent plots 
+
+figure;
+plot((0:Sim.Steps - 1) * Sim.dt, spacing_errors);
+title('Spacing Error');
+grid on;
+ylabel('m');
+legend('1','2','3','4','5','6','7','8','9','10','11','12');
+
+figure;
+plot((0:Sim.Steps - 1) * Sim.dt, VEL');
+title('Vehicle Speeds');
+grid on;
+ylabel('m/s');
+legend('1','2','3','4','5','6','7','8','9','10','11','12');
+
+figure;
+plot((0:Sim.Steps - 1) * Sim.dt, mean(abs(spacing_errors), 1));
+title('Average Absolute Spacing Error');
+grid on;
+ylabel('Error (m)');
+
+figure;
+yyaxis left;
+plot((0:Sim.Steps - 1) * Sim.dt, CumulComm);
+ylabel('Cumulative Packets Allocated');
+yyaxis right;
+plot((0:Sim.Steps - 1) * Sim.dt, CumulEnergy);
+ylabel('Cumulative Energy (J)');
+xlabel('Time (s)');
+grid on;
+
+
 %% Plot per-vehicle transmission schedule
 [N, ~] = size(TotalSchedule);
 
