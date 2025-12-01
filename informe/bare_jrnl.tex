@@ -97,7 +97,7 @@ p_{i}^{t+1} &= p_{i}^{t} + v_i^t\Delta t + \frac{1}{2}u_i^t(\Delta t)^2.
 \end{align}
 Aquí, la entrada de control es $u_i^t \equiv a_i^t$. Las restricciones son simplemente $a_{\min} \le u_i^t \le a_{\max}$.
 
-\textit{Crítica:} Este modelo permite cambios de aceleración tipo escalón (step), lo que implica un \textit{jerk} infinito teórico y fuerzas instantáneas imposibles de generar por un motor real.
+Este modelo permite cambios de aceleración tipo escalón, lo que implica un \textit{jerk} infinito teórico y fuerzas instantáneas imposibles de generar por un motor real.
 
 \subsection{Dinámico Propuesto }
 Para capturar la inercia y el confort, se introduce la fuerza longitudinal $F_i$ como variable de estado, con lo que se limita el \textit{jerk}.
@@ -128,7 +128,6 @@ Para el \textbf{Modelo A}, la proyección es cuadrática estándar. Para el \tex
 \[
 e_{p}^{t+1} \approx e_p^t + e_v^t \Delta t + \frac{1}{2}a^t \Delta t^2 + \frac{\Delta t^3}{6m}u_i^t.
 \]
-(Nota: En la implementación discreta simplificada, usamos los coeficientes matriciales derivados a continuación).
 
 La matriz $\mathbf{A}$ que relaciona la entrada $u$ con el estado futuro $[p, v, a]^T$ es:
 \[
@@ -418,33 +417,14 @@ recursos espectrales y energéticos limitados.
 
 \section{Conclusiones}
 
-Este trabajo replicó la arquitectura de control NOMA-V2V de He \textit{et al.} y demostró que los modelos cinemáticos utilizados en la literatura subestiman los requisitos de comunicación y la realidad física del control.
+Este trabajo replicó la arquitectura de control NOMA-V2V de \cite{He2023} y demostró que los modelos cinemáticos utilizados en la literatura subestiman los requisitos de comunicación y la realidad física del control.
 
 La propuesta de un modelo dinámico limitado por \textit{jerk} evidencia que:
 1. La estabilidad es alcanzable bajo restricciones de confort, pero con una convergencia más lenta.
 2. Existe un costo oculto en la eficiencia espectral: sistemas más realistas y suaves requieren una mayor tasa de actualización de datos para gestionar la inercia de forma precisa.
 3. NOMA es una tecnología habilitadora robusta que permite absorber este exceso de carga de comunicación sin saturar el canal, validando su uso en VCPS de alta fidelidad.
 
-\appendices
-\section{Matrices del Controlador Dinámico}
-Implementación MATLAB de las matrices predictivas para el modelo $F=ma$:
-\begin{verbatim}
-A_p = -0.5 * (dt^3 / m);
-A_v = - (dt^2 / m);
-A_a = - (dt / m);
-H = 2 * (A' * W * A);
-f = 2 * (A' * W * B);
-\end{verbatim}
-
 \bibliographystyle{IEEEtran}
 \bibliography{references}
-
-\begin{IEEEbiography}{Jorge Apud}
-Estudiante de Ingeniería Eléctrica, PUC Chile. Intereses en control automático y optimización de redes.
-\end{IEEEbiography}
-
-\begin{IEEEbiography}{Patricio Hinostroza}
-Estudiante de Magíster en Ciencias de la Ingeniería, PUC Chile. Intereses en sistemas ciberfísicos y robótica.
-\end{IEEEbiography}
 
 \end{document}
