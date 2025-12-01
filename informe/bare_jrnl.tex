@@ -17,7 +17,7 @@
 
 \begin{document}
 
-\title{Extended Comparative Analysis of Kinematic and Dynamic Controllers in NOMA-V2V Platoon Systems with Jerk-Constrained Motion}
+\title{Joint Platoon Control and Resource Allocation for NOMA-V2V Communication System: A Comparative Analysis of Vehicle Dynamics Impact}
 
 \author{Jorge Apud, Patricio Hinostroza%
 \thanks{Los autores son estudiantes de la Pontificia Universidad Católica de Chile (emails: patricio.hinostrozav@uc.cl, japud@uc.cl).}%
@@ -28,11 +28,15 @@
 \maketitle
 
 \begin{abstract}
-Los sistemas de control vehicular cooperativo han emergido como una solución esencial para mejorar la eficiencia, seguridad y capacidad vial en entornos de transporte inteligente. En \cite{He2023} se introduce un esquema conjunto de asignación de recursos NOMA y control distribuido orientado a \textit{platooning}, modelando explícitamente la relación entre el error de espaciamiento y la demanda de comunicación. Sin embargo, dicho marco utiliza un modelo cinemático idealizado, donde la aceleración es directamente manipulada por el controlador, ignorando la dinámica real del actuador, los límites de fuerza y las restricciones de \textit{jerk} (tasa de cambio de aceleración). En esta investigación se replica rigurosamente el marco original y se propone una extensión físicamente realizable basada en un modelo dinámico de tercer orden (fuerza–masa–\textit{jerk}). Los resultados comparativos muestran que el modelo cinemático subestima el error de rastreo real y genera perfiles de aceleración incompatibles con los estándares de confort de pasajeros, mientras que el modelo dinámico corrige esta brecha a costa de un moderado aumento en la demanda de comunicación. El trabajo contribuye al entendimiento integrado del co-diseño control–comunicación en redes NOMA-V2V bajo restricciones dinámicas realistas.
+El \textit{platooning} vehicular cooperativo, apoyado en comunicaciones V2V fiables, es crucial para los Sistemas de Transporte Inteligente modernos. Es por esto que tanto la gestión eficiente de recursos de comunicación,como la asignación NOMA, es vital para mantener la estabilidad del pelotón bajo restricciones de red realistas. Este trabajo analizó el efecto de incorporar un modelo vehicular de tercer orden con limitación explícita de \textit{jerk} dentro de un marco conjunto de control de \textit{platooning} y comunicaciones V2V basado en NOMA.
+Se replicó íntegramente la arquitectura de un modelo cinemático simplificado y se comparó su desempeño frente a un nuevo modelo dinámico bajo idénticas condiciones de red y perturbación del líder.
+Los resultados mostraron que el modelo con \textit{jerk} acotado produjo trayectorias significativamente más suaves en aceleración, velocidad y espaciamiento, reduciendo las oscilaciones transitorias y mejorando la estabilidad en régimen permanente.
+A pesar de su mayor realismo dinámico, el modelo propuesto requirió un menor número de transmisiones y redujo el consumo total de energía en comunicaciones en un 19\% y 25 \% respectivamente, evidenciando que acciones de control más suaves pueden disminuir la demanda sobre el canal. 
+En conjunto, los resultados demostraron que NOMA se mantuvo eficaz bajo un modelo vehicular más realista y destacaron la importancia de considerar límites físicos de actuadores en estudios de co-diseño entre control y comunicaciones.
 \end{abstract}
 
 \begin{IEEEkeywords}
-NOMA-V2V, Platooning, Vehicular Dynamics, MPC, Jerk-Limited Control, Distributed Control, Resource Allocation.
+NOMA-V2V, Platooning, Vehicular Dynamics, Jerk-Limited Control, Distributed Control, Resource Allocation.
 \end{IEEEkeywords}
 
 \section{Introducción}
@@ -40,7 +44,7 @@ NOMA-V2V, Platooning, Vehicular Dynamics, MPC, Jerk-Limited Control, Distributed
 
 \IEEEPARstart{E}{l} control cooperativo de formaciones vehiculares (\textit{platooning}) constituye un pilar fundamental de los Sistemas de Transporte Inteligente (ITS) modernos. Mediante la mantención de distancias reducidas entre vehículos y la coordinación de velocidades, se reduce el consumo energético, aumenta la capacidad vial, mejora seguridad, reducen trafico, entre otros \cite{Jia2016},\cite{Noor2022}.
 
-Para garantizar la estabilidad del pelotón, \textit{string stability}, es imperativo contar con un controlador eficaz que opere sobre una red de comunicación Vehículo-a-Vehículo (V2V) de alta fiabilidad \cite{Jia2016}. Esto plantea una dependencia crítica entre el desempeño del control y la disponibilidad de recursos espectrales \cite{Gyawali2021}. Una red deficiente, caracterizada por latencias estocásticas o pérdida de paquetes, puede degradar la calidad del control, llevando a oscilaciones peligrosas o incluso colisiones.
+Para garantizar la estabilidad de pelotón, \textit{string stability}, es imperativo contar con un controlador eficaz que opere sobre una red de comunicación Vehículo-a-Vehículo (V2V) de alta fiabilidad \cite{Jia2016}. Esto plantea una dependencia crítica entre el desempeño del control y la disponibilidad de recursos espectrales \cite{Gyawali2021}. Una red deficiente, caracterizada por latencias estocásticas o pérdida de paquetes, puede degradar la calidad del control, llevando a oscilaciones peligrosas o incluso colisiones.
 
 \subsection{Desafíos en la Gestión de Recursos}
 La proliferación exponencial de dispositivos conectados en el Internet de las Cosas (IoT) ha generado una presión creciente sobre las bandas de comunicación limitadas. Como se señala en \cite{Noor2022}, sin una gestión de recursos rigurosa, la comunicación V2V se vuelve propensa a interferencias y congestión, haciendo difícil satisfacer los estrictos requisitos de latenciay tasa de actualización necesarios para el control de pelotones.
@@ -254,19 +258,14 @@ Con esta estrategia, ambos modelos son sometidos a una perturbación externa id�
 \subsubsection{Estabilidad y error}
 En la Figura~\ref{fig:new_model_spacing_error} se muestra la evolución del error de
 espaciamiento por vehículo para el modelo dinámico con limitación explícita de
-\textit{jerk}, mientras que las Figuras~\ref{fig:new_model_speeds} y
-\ref{fig:new_model_absolute_error} muestran, respectivamente, la velocidad de los
+\textit{jerk}, mientras que las Figuras~\ref{fig:new_model_speeds} y \ref{fig:new_model_absolute_error} muestran, respectivamente, la velocidad de los
 vehículos y el error absoluto promedio. La perturbación introducida en la trayectoria del
-líder genera una onda de desaceleración que se propaga hacia la cola del
-\emph{platoon}, pero dicha onda es suave: los errores de espaciamiento presentan
+líder genera una onda de desaceleración que se propaga hacia la cola del pelotón, pero dicha onda es suave: los errores de espaciamiento presentan
 variaciones continuas y sin esquinas, alcanzan un máximo cercano a $0.5\,\mathrm{m}$ de manera agregada y de $1.2\,\mathrm{m}$ en el peor vehiculo, 
 luego decrecen de forma monótona hasta estabilizarse en un valor estacionario del orden
 de los centímetros. La curva de velocidades es igualmente suave, con perfiles casi
 superpuestos entre vehículos, lo que indica que el controlador local y la dinámica de
-tercer orden permiten que el \emph{platoon} recupere la velocidad de crucero sin
-oscilaciones de alta frecuencia. Finalmente, en la
-Figura~\ref{fig:new_model_packets} se presenta la evolución de los paquetes acumulados
-recibidos correctamente a lo largo del horizonte de simulación.
+tercer orden permiten que el pelotón recupere la velocidad de crucero sin oscilaciones de alta frecuencia. Finalmente, en la Figura~\ref{fig:new_model_packets} se presenta la evolución de los paquetes acumulados recibidos correctamente a lo largo del horizonte de simulación.
 
 \begin{figure}[H]
     \centering
@@ -301,13 +300,12 @@ En contraste, las Figuras~\ref{fig:paper_model_spacing_error} y
 \emph{paper}. En este caso, los cambios de aceleración son abruptos y se traducen en
 perfiles de velocidad con tramos fuertemente angulados, evidenciando saltos en la
 aceleración aplicada a los vehículos. Los errores de espaciamiento
-(Fig.~\ref{fig:paper_model_spacing_error}) muestran trayectorias más irregulares, con
-componentes positivas y negativas que se estabilizan en un error estacionario mayor, del
-orden de $0.4\,\mathrm{m}$, como se aprecia en la
+(Fig.~\ref{fig:paper_model_spacing_error}) muestran trayectorias que se estabilizan en un error estacionario mayor, del
+orden de $0.2\,\mathrm{m}$ frente a $0.1\,\mathrm{m}$ del modelo dinámico, como se aprecia en la
 Figura~\ref{fig:paper_model_absolute_error}. Además, la propagación de la perturbación es
 menos suave y tiende a dejar diferencias persistentes entre vehículos.
 
-Desde el punto de vista de estabilidad, ambos modelos logran mantener el \emph{platoon}
+Desde el punto de vista de estabilidad, ambos modelos logran mantener el pelotón
 cohesionado ante la perturbación, pero el modelo dinámico con \textit{jerk} acotado
 presenta una respuesta claramente más amortiguada: el máximo error de espaciamiento es
 similar o ligeramente menor, el error absoluto promedio decrece más rápido después del
@@ -345,20 +343,11 @@ pasajeros.
 \end{figure}
 
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=\linewidth]{Imagenes/paper_model_route_info}
-    \caption{Evolución del error de espaciamiento, velocidades y error promedio
-    absoluto para el modelo cinemático original.}
-    \label{fig:paper_route_info}
-\end{figure}
-
-
 \subsubsection{Costo en comunicaciones}
 
 Las Figuras~\ref{fig:new_tx_schedule} y~\ref{fig:paper_tx_schedule} muestran el patrón
 de transmisiones para cada seguidor en ambos modelos. En el modelo dinámico propuesto,
-las transmisiones son más regulares en el tiempo: una vez que la perturbación alcanza a
+las transmisiones son casi regulares en el tiempo: una vez que la perturbación alcanza a
 cada vehículo, éste comienza a transmitir de manera casi periódica a lo largo del
 horizonte. El agendamiento NOMA distribuye las oportunidades de transmisión de forma
 uniforme entre los seguidores, evitando grandes intervalos sin comunicación. Esta
@@ -382,20 +371,17 @@ de los predecesores.
 \end{figure}
 
 
-En el modelo cinemático de referencia, en cambio, se observan ráfagas de transmisión
-concentradas en las zonas donde los errores crecen rápidamente, seguidas de intervalos
-prolongados prácticamente sin paquetes. El esquema de agendamiento asigna recursos cuando
-los errores ya son altos, pero luego puede pasar varios segundos sin nuevas
-actualizaciones, lo que contribuye a los cambios abruptos en las acciones de control y a
-un error estacionario mayor. El resultado es un uso de canal menos homogéneo en el
-tiempo, con picos de demanda y periodos ociosos.
+En el modelo cinemático de referencia, en cambio, se observan densidades mucho mayores de
+transmisiones, especialmente en los vehículos más lejanos al líder. Esto se debe a que los errores de espaciamiento son más abruptos, condición que se acumula hacia la cola del pelotón y obliga a transmisiones más frecuentes para corregir desviaciones repentinas. El agendamiento NOMA, aunque eficiente, no logra distribuir las transmisiones de forma tan uniforme, resultando en intervalos irregulares y picos de actividad que reflejan la naturaleza más errática del error.
+
+
 
 La Tabla~\ref{tab:comm_cost} resume las métricas de comunicación agregadas. A pesar de
 mostrar mejor desempeño en términos de estabilidad y error, el modelo dinámico con
 \textit{jerk} limitado utiliza menos recursos de comunicación: el número total de
-paquetes transmitidos se reduce aproximadamente en un $15\%$ (de $3152$ a $2664$), y la
-energía de transmisión integrada disminuye alrededor de un $17\%$ (de
-$8.15\times10^{-6}\,\mathrm{J}$ a $6.79\times10^{-6}\,\mathrm{J}$). Esto indica que el
+paquetes transmitidos se reduce aproximadamente en un $19\%$ (de $3264$ a $2664$), y la
+energía de transmisión integrada disminuye alrededor de un $25\%$ (de
+$9.02\times10^{-6}\,\mathrm{J}$ a $6.79\times10^{-6}\,\mathrm{J}$). Esto indica que el
 modelo propuesto no sólo mejora la calidad de seguimiento, sino que lo hace con un costo
 de comunicaciones menor, lo que resulta especialmente relevante para escenarios V2V con
 recursos espectrales y energéticos limitados.
@@ -409,7 +395,7 @@ recursos espectrales y energéticos limitados.
         \hline
         \textbf{Modelo} & \textbf{Paquetes acumulados} & \textbf{Energía integrada [J]} \\
         \hline
-        Cinemático (paper) & $3152$ & $8.15\times10^{-6}$ \\
+        Cinemático (paper) & $3152$ & $9.02\times10^{-6}$ \\
         Dinámico con \textit{jerk} limitado & $2664$ & $6.79\times10^{-6}$ \\
         \hline
     \end{tabular}
@@ -420,9 +406,13 @@ recursos espectrales y energéticos limitados.
 Este trabajo replicó la arquitectura de control NOMA-V2V de \cite{He2023} y demostró que los modelos cinemáticos utilizados en la literatura subestiman los requisitos de comunicación y la realidad física del control.
 
 La propuesta de un modelo dinámico limitado por \textit{jerk} evidencia que:
-1. La estabilidad es alcanzable bajo restricciones de confort, pero con una convergencia más lenta.
-2. Existe un costo oculto en la eficiencia espectral: sistemas más realistas y suaves requieren una mayor tasa de actualización de datos para gestionar la inercia de forma precisa.
-3. NOMA es una tecnología habilitadora robusta que permite absorber este exceso de carga de comunicación sin saturar el canal, validando su uso en VCPS de alta fidelidad.
+\begin{enumerate}
+    \item NOMA es una tecnología habilitadora robusta que permite absorber este exceso de carga de comunicación sin saturar el canal, validando su uso en VCPS de alta fidelidad.
+    \item Se redujo el costo de comunicación total en un 25 \%, sugiriendo que modelos más realistas pueden optimizar el uso del canal al evitar transmisiones innecesarias principalmente debido a la sobreestimación del error y a cambios mucho mas suaves.
+    \item El modelo dinámico con \textit{jerk} limitado mejora la estabilidad del pelotón, reduciendo el error de espaciamiento promedio y maximo 
+\end{enumerate}
+Futuras líneas de investigación incluyen la validación experimental en bancos de prueba vehiculares, la introducción de modelos de canal más complejos y la exploración de estrategias de aprendizaja de maquina para optimizar el co-diseño control-comunicación.
+
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

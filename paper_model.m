@@ -469,7 +469,7 @@ function u = solve_control_qp(p_i, v_i, pred, Platoon, dt)
     A = [-0.5 * dt^2; -dt];              % position and velocity contributions
     
     % Quadratic cost weights
-    W = diag([1, 1]);
+    W = diag([8, 1]);
     
     % QP formulation: min (B + A*u)' W (B + A*u)
     H = 2 * (A' * W * A);               % quadratic term (scalar)
